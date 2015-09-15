@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 
-module Network.HMAC.Parse where
+module Network.HAuth.Parse where
 
 import           Control.Applicative ((<|>))
 import           Data.Attoparsec.ByteString
@@ -11,7 +11,7 @@ import           Data.Map (Map)
 import qualified Data.Map as Map
 import           Data.Set (Set)
 import qualified Data.Set as Set
-import           Network.HMAC.Types
+import           Network.HAuth.Types
 
 plainTextP :: Parser ByteString
 plainTextP = takeWhile1 (inClass "a-zA-Z0-9+/=")

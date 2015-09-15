@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Network.HMAC.Types where
+module Network.HAuth.Types where
 
 import Data.ByteString
 

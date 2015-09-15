@@ -6,8 +6,8 @@ import           Test.Hspec
 import           Test.Hspec.Attoparsec
 import           Test.Tasty
 import           Test.Tasty.Hspec
-import           Network.HMAC.Parse
-import           Network.HMAC.Types
+import           Network.HAuth.Parse
+import           Network.HAuth.Types
 
 main :: IO ()
 main = do
@@ -56,7 +56,7 @@ https://tools.ietf.org/html/draft-ietf-oauth-v2-http-mac-01#section-3.1
 
 idAttrParserSpec :: IO TestTree
 idAttrParserSpec = do
-    testSpec "HMAC Auth Header ID Attribute Parser" $
+    testSpec "HAuth Auth Header ID Attribute Parser" $
         do describe "id k/v parser" $
                do it "id key should be lower case" $
                       do idP `shouldFailOn` ("ID=abc" :: B.ByteString)
@@ -74,7 +74,7 @@ idAttrParserSpec = do
 
 tsAttrParserSpec :: IO TestTree
 tsAttrParserSpec = do
-    testSpec "HMAC Auth Header TsAttr Parser" $
+    testSpec "HAuth Auth Header TsAttr Parser" $
         do describe "ts k/v parser" $
                do it "ts key should be lower case" $
                       do tsP `shouldFailOn` ("TS=abc" :: B.ByteString)
@@ -91,7 +91,7 @@ tsAttrParserSpec = do
 
 nonceAttrParserSpec :: IO TestTree
 nonceAttrParserSpec = do
-    testSpec "HMAC Auth Header NonceAttr Parser" $
+    testSpec "HAuth Auth Header NonceAttr Parser" $
         do describe "nonce k/v parser" $
                do it "nonce value should be plain-string" $
                       do ("nonce=xyz123" :: B.ByteString) ~> nonceP `shouldParse`
@@ -109,7 +109,7 @@ nonceAttrParserSpec = do
 
 extAttrParserSpec :: IO TestTree
 extAttrParserSpec = do
-    testSpec "HMAC Auth Header ExtAttr Parser" $
+    testSpec "HAuth Auth Header ExtAttr Parser" $
         do describe "ext k/v parser" $
                do it "ext value is required (if key is present)" $
                       do extP `shouldFailOn` ("ext" :: B.ByteString)
@@ -124,7 +124,7 @@ extAttrParserSpec = do
 
 macAttrParserSpec :: IO TestTree
 macAttrParserSpec = do
-    testSpec "HMAC Auth Header MacAttr Parser" $
+    testSpec "HAuth Auth Header MacAttr Parser" $
         do describe "mac k/v parser" $
                do it "mac value is required" $
                       do macP `shouldFailOn` ("mac" :: B.ByteString)
@@ -139,7 +139,7 @@ macAttrParserSpec = do
 
 authHeaderParserSpec :: IO TestTree
 authHeaderParserSpec =
-    testSpec "HMAC Auth Header Parser" $
+    testSpec "HAuth Auth Header Parser" $
     do describe "auth header parser" $
            do it "auth header should parse id,ts,nonce,ext & mac attributes" $
                   do ("id=lol ts=890 nonce=487 mac=af0" :: B.ByteString) ~>
@@ -161,7 +161,7 @@ authHeaderParserSpec =
 
 authHeaderToAuthSpec :: IO TestTree
 authHeaderToAuthSpec =
-    testSpec "HMAC AuthHeader->Auth Transformation" $
+    testSpec "HAuth AuthHeader->Auth Transformation" $
     do describe "auth header transform" $
            do it "should convert a valid auth header to auth record" $
                   do authHeaderToAuth

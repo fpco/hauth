@@ -1,9 +1,9 @@
-name:                hmac
+name:                hauth
 version:             0.1.0
-synopsis:            HMAC Library
+synopsis:            Header Authentication Library
 description:         Hash-Based Message Authentication Code Library based on
                      OAuth2 & https://confluence.amgencss.fpcomplete.com/x/lwAQ
-homepage:            http://github.com/fpco/hmac
+homepage:            http://github.com/fpco/hauth
 license:             MIT
 license-file:        LICENSE
 author:              Tim Dysinger
@@ -15,9 +15,9 @@ cabal-version:       >=1.10
 
 library
   default-language:    Haskell2010
-  exposed-modules:     Network.HMAC
-                       Network.HMAC.Parse
-                       Network.HMAC.Types
+  exposed-modules:     Network.HAuth
+                       Network.HAuth.Parse
+                       Network.HAuth.Types
   hs-source-dirs:      src
   build-depends:       aeson
                      , attoparsec
