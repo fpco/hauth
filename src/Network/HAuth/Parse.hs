@@ -1,9 +1,14 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 
 module Network.HAuth.Parse where
 
+#if __GLASGOW_HASKELL__ >= 710
 import           Control.Applicative ((<|>))
+#else
+import           Control.Applicative ((<$>), (<*>), (<|>), (<*), (*>), pure)
+#endif
 import           Data.Attoparsec.ByteString
 import           Data.Attoparsec.ByteString.Char8 (char, decimal, space)
 import           Data.ByteString (ByteString)
@@ -12,6 +17,7 @@ import qualified Data.Map as Map
 import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Network.HAuth.Types
+import           Network.HAuth.Types.Internal
 
 plainTextP :: Parser ByteString
 plainTextP = takeWhile1 (inClass "a-zA-Z0-9+/=")

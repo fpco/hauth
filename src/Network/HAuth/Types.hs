@@ -1,54 +1,66 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Network.HAuth.Types where
+module Network.HAuth.Types
+       (ConsulConfig, defaultConsulConfig, setConsulHost, setConsulPort,
+        getConsulHost, getConsulPort, PostgresConfig,
+        defaultPostgresConfig, setPostgresHost, setPostgresPort,
+        getPostgresHost, getPostgresPort)
+       where
 
-import Data.ByteString
+import           Data.Text (Text)
+import qualified Data.Text as Text
+import           Network.HAuth.Types.Internal
+import           Network.Socket
 
-data AuthAttrKey
-    = IdKey
-    | TsKey
-    | NonceKey
-    | ExtKey
-    | MacKey
-    deriving (Enum,Eq,Ord,Show)
+data ConsulConfig = ConsulConfig
+    { consulHost :: Text
+    , consulPort :: PortNumber
+    } deriving (Show)
 
-data AuthAttrVal
-    = IdVal { idVal :: ByteString }
-    | TsVal { tsVal :: Integer }
-    | NonceVal { nonceVal :: ByteString }
-    | ExtVal { extVal :: ByteString }
-    | MacVal { macVal :: ByteString }
-    deriving (Eq,Show)
+defaultConsulConfig :: ConsulConfig
+defaultConsulConfig = ConsulConfig "127.0.0.1" 8500
 
-type AuthAttribute = (AuthAttrKey, AuthAttrVal)
+setConsulHost :: ConsulConfig -> Text -> ConsulConfig
+setConsulHost cc h =
+    cc
+    { consulHost = h
+    }
 
-type AuthHeader = [AuthAttribute]
+setConsulPort :: ConsulConfig -> PortNumber -> ConsulConfig
+setConsulPort cc p =
+    cc
+    { consulPort = p
+    }
 
-data ID =
-    ID ByteString
-    deriving (Eq,Show)
+getConsulHost :: ConsulConfig -> Text
+getConsulHost = consulHost
 
-data TS =
-    TS Integer
-    deriving (Eq,Show)
+getConsulPort :: ConsulConfig -> PortNumber
+getConsulPort = consulPort
 
-data Nonce =
-    Nonce ByteString
-    deriving (Eq,Show)
+data PostgresConfig = PostgresConfig
+    { postgresHost :: Text
+    , postgresPort :: PortNumber
+    } deriving (Show)
 
-data Ext =
-    Ext ByteString
-    deriving (Eq,Show)
+defaultPostgresConfig :: PostgresConfig
+defaultPostgresConfig = PostgresConfig "127.0.0.1" 5432
 
-data Mac =
-    Mac ByteString
-    deriving (Eq,Show)
+setPostgresHost :: PostgresConfig -> Text -> PostgresConfig
+setPostgresHost cc h =
+    cc
+    { postgresHost = h
+    }
 
-data Auth = Auth
-    { id' :: ID
-    , ts :: TS
-    , nonce :: Nonce
-    , ext :: Maybe Ext
-    , mac :: Mac
-    } deriving (Eq,Show)
+setPostgresPort :: PostgresConfig -> PortNumber -> PostgresConfig
+setPostgresPort cc p =
+    cc
+    { postgresPort = p
+    }
+
+getPostgresHost :: PostgresConfig -> Text
+getPostgresHost = postgresHost
+
+getPostgresPort :: PostgresConfig -> PortNumber
+getPostgresPort = postgresPort

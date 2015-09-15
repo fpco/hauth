@@ -16,30 +16,33 @@ cabal-version:       >=1.10
 library
   default-language:    Haskell2010
   exposed-modules:     Network.HAuth
-                       Network.HAuth.Parse
                        Network.HAuth.Types
+                       Network.HAuth.Wai
+  other-modules:       Network.HAuth.Parse
+                       Network.HAuth.Types.Internal
   hs-source-dirs:      src
   build-depends:       aeson
                      , attoparsec
-                     , base >=4.8 && <4.9
+                     , base >=4.7 && <5
                      , bytestring
-                     , bytestring
-                     , conduit
                      , containers
                      , cryptohash
-                     , http-conduit
                      , http-types
                      , mtl
+                     , network
                      , persistent
                      , persistent-postgresql
+                     , text
+                     , uuid
                      , wai
+                     , wai-middleware-consul
 
 test-suite test
   default-language:    Haskell2010
   hs-source-dirs:      tests
   main-is:             Main.hs
   type:                exitcode-stdio-1.0
-  build-depends:       base >=4.8 && <4.9
+  build-depends:       base >=4.7 && <5
                      , bytestring
                      , hmac
                      , hspec

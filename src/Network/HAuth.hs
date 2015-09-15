@@ -1,5 +1,7 @@
 module Network.HAuth
-       (module Network.HAuth.Parse, module Network.HAuth.Types) where
+       ( module Network.HAuth.Types
+       , module Network.HAuth.Wai
+       ) where
 
-import Network.HAuth.Parse
+import Network.HAuth.Wai
 import Network.HAuth.Types
