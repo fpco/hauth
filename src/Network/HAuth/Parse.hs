@@ -17,7 +17,6 @@ import qualified Data.Map as Map
 import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Network.HAuth.Types
-import           Network.HAuth.Types.Internal
 
 plainTextP :: Parser ByteString
 plainTextP = takeWhile1 (inClass "a-zA-Z0-9+/=")

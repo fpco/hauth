@@ -1,11 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Network.HAuth.Types
-       (ID(..), TS(..), Nonce(..), Ext(..), mkAuth, Auth, ConsulConfig,
-        defaultConsulConfig, setConsulHost, setConsulPort, getConsulHost,
-        getConsulPort, PostgresConfig, defaultPostgresConfig,
-        setPostgresHost, setPostgresPort, getPostgresHost, getPostgresPort)
-       where
+module Network.HAuth.Types where
 
 import           Crypto.Hash
 import           Crypto.MAC
@@ -15,8 +10,57 @@ import qualified Data.ByteString.Char8 as BC
 import           Data.Byteable
 import           Data.Text (Text)
 import qualified Data.Text as Text
-import           Network.HAuth.Types.Internal
 import           Network.Socket
+
+import Data.ByteString
+
+data AuthAttrKey
+    = IdKey
+    | TsKey
+    | NonceKey
+    | ExtKey
+    | MacKey
+    deriving (Enum,Eq,Ord,Show)
+
+data AuthAttrVal
+    = IdVal { idVal :: ByteString }
+    | TsVal { tsVal :: Integer }
+    | NonceVal { nonceVal :: ByteString }
+    | ExtVal { extVal :: ByteString }
+    | MacVal { macVal :: ByteString }
+    deriving (Eq,Show)
+
+type AuthAttribute = (AuthAttrKey, AuthAttrVal)
+
+type AuthHeader = [AuthAttribute]
+
+data ID =
+    ID ByteString
+    deriving (Eq,Show)
+
+data TS =
+    TS Integer
+    deriving (Eq,Show)
+
+data Nonce =
+    Nonce ByteString
+    deriving (Eq,Show)
+
+data Ext =
+    Ext ByteString
+    deriving (Eq,Show)
+
+data Mac =
+    Mac ByteString
+    deriving (Eq,Show)
+
+data Auth = Auth
+    { id' :: ID
+    , ts :: TS
+    , nonce :: Nonce
+    , ext :: Maybe Ext
+    , mac :: Mac
+    } deriving (Eq,Show)
 
 mkAuth :: ByteString -> ID -> TS -> Nonce -> Maybe Ext -> Auth
 mkAuth key id ts nonce ext =
