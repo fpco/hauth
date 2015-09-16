@@ -16,8 +16,12 @@ cabal-version:       >=1.10
 library
   default-language:    Haskell2010
   exposed-modules:     Network.HAuth
+                       Network.HAuth.Auth
                        Network.HAuth.Parse
                        Network.HAuth.Types
+                       Network.HAuth.Types.Auth
+                       Network.HAuth.Types.DataStore
+                       Network.HAuth.Types.Secret
                        Network.HAuth.Wai
   hs-source-dirs:      src
   build-depends:       aeson

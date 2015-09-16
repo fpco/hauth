@@ -10,6 +10,7 @@ import           Test.Hspec
 import           Test.Hspec.Attoparsec
 import           Test.Tasty
 import           Test.Tasty.Hspec
+import           Network.HAuth.Auth
 import           Network.HAuth.Parse
 import           Network.HAuth.Types
 

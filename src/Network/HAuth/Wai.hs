@@ -3,7 +3,7 @@ module Network.HAuth.Wai where
 import Network.HAuth.Types
 import Network.Wai
 
-hauth :: ConsulConfig -> PostgresConfig -> Middleware
+hauth :: SecretDataStore -> AuthDataStore -> Middleware
 hauth cc pc app = app
 
 -- Create a mvar to house the keys
