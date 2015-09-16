@@ -62,6 +62,16 @@ data Auth = Auth
     , mac :: Mac
     } deriving (Eq,Show)
 
+data KeyDB = KeyDB
+    { listKeys :: MonadIO m => [Key]
+    , watchKey :: ManodIO m => (Key -> m ())
+    }
+
+data AuthDB = AuthDB
+    { queryForMatch :: MonadIO m => ID -> TS -> Nonce -> Mac -> Maybe [Auth]
+    , insertAuth :: MonadIO m => Auth -> m ()
+    }
+
 mkAuth :: ByteString -> ID -> TS -> Nonce -> Maybe Ext -> Auth
 mkAuth key id ts nonce ext =
   Auth id ts nonce ext (authMac key id ts nonce ext)
