@@ -36,7 +36,6 @@ library
                      , text
                      , uuid
                      , wai
-                     , wai-middleware-consul
 
 test-suite test
   default-language:    Haskell2010

@@ -3,16 +3,14 @@ module Network.HAuth.Wai where
 import Network.HAuth.Types
 import Network.Wai
 
-import Network.Wai.Middleware.Consul ( withConsul )
-
 hauth :: ConsulConfig -> PostgresConfig -> Middleware
 hauth cc pc app = app
 
 -- Create a mvar to house the keys
--- Callback from consulconfig goes to the function that closes over the mvar
--- Query consulconfig & register a callback for each keys
--- How do we find out about new keys
 -- Create a request UUID
+-- Query consulconfig & register a callback for each keys
+-- Callback from consulconfig goes to the function that closes over the mvar
+-- How do we find out about new keys?
 -- Check for the authentication header
    -- Reply 4xx if it's not there
 -- Parse the authentication header
