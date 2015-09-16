@@ -1,17 +1,40 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Network.HAuth.Types
-       (ConsulConfig, defaultConsulConfig, setConsulHost, setConsulPort,
-        getConsulHost, getConsulPort, PostgresConfig,
-        defaultPostgresConfig, setPostgresHost, setPostgresPort,
-        getPostgresHost, getPostgresPort)
+       (ID(..), TS(..), Nonce(..), Ext(..), mkAuth, Auth, ConsulConfig,
+        defaultConsulConfig, setConsulHost, setConsulPort, getConsulHost,
+        getConsulPort, PostgresConfig, defaultPostgresConfig,
+        setPostgresHost, setPostgresPort, getPostgresHost, getPostgresPort)
        where
 
+import           Crypto.Hash
+import           Crypto.MAC
+import           Data.ByteString (ByteString)
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as BC
+import           Data.Byteable
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Network.HAuth.Types.Internal
 import           Network.Socket
+
+mkAuth :: ByteString -> ID -> TS -> Nonce -> Maybe Ext -> Auth
+mkAuth key id ts nonce ext =
+  Auth id ts nonce ext (authMac key id ts nonce ext)
+
+authMac :: ByteString -> ID -> TS -> Nonce -> Maybe Ext -> Mac
+authMac key (ID i) (TS t) (Nonce n) e =
+    let attrs = [i, BC.pack (show t), n]
+        hmac' :: HMAC SHA256
+        hmac' =
+            hmac
+                key
+                (B.intercalate
+                     "\n"
+                     (case e of
+                          (Just (Ext e')) -> attrs ++ [e']
+                          Nothing -> attrs))
+    in Mac (toBytes hmac')
 
 data ConsulConfig = ConsulConfig
     { consulHost :: Text
