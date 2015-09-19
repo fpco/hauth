@@ -4,10 +4,10 @@
 
 module Network.HAuth.Parse where
 
-#if __GLASGOW_HASKELL__ >= 710
-import           Control.Applicative ((<|>))
-#else
+#if __GLASGOW_HASKELL__ < 710
 import           Control.Applicative ((<$>), (<*>), (<|>), (<*), (*>), pure)
+#else
+import           Control.Applicative ((<|>))
 #endif
 import           Data.Attoparsec.ByteString
 import           Data.Attoparsec.ByteString.Char8 (char, decimal, space)

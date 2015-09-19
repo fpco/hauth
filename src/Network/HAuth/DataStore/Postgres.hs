@@ -1,28 +1,33 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Network.HAuth.DataStore.Postgres where
+module Network.HAuth.DataStore.Postgres
+       (PostgresConfig, mkPostgresConfig, getPostgresSockAddr,
+        setPostgresSockAddr, mkPostgresAuthDataStore)
+       where
 
-import Data.Text (Text)
-import Network.HAuth.Types.DataStore
-import Network.Socket (PortNumber)
+#if __GLASGOW_HASKELL__ < 710
+import           Control.Applicative (Applicative, pure)
+#endif
+import           Control.Monad.IO.Class (MonadIO)
+import           Control.Monad.Logger (MonadLogger)
+import qualified Data.Map.Strict as Map
+import           Network.HAuth.DataStore.Memory
+import           Network.HAuth.Types
+import           Network.Socket (SockAddr(..))
 
-defaultPostgresConfig :: PostgresConfig
-defaultPostgresConfig = PostgresConfig "127.0.0.1" 5432
+data PostgresConfig = PostgresConfig SockAddr
 
-setPostgresHost :: PostgresConfig -> Text -> PostgresConfig
-setPostgresHost cc h =
-    cc
-    { postgresHost = h
-    }
+mkPostgresConfig :: SockAddr -> PostgresConfig
+mkPostgresConfig = PostgresConfig
 
-setPostgresPort :: PostgresConfig -> PortNumber -> PostgresConfig
-setPostgresPort cc p =
-    cc
-    { postgresPort = p
-    }
+setPostgresSockAddr :: PostgresConfig -> SockAddr -> PostgresConfig
+setPostgresSockAddr _ = PostgresConfig
 
-getPostgresHost :: PostgresConfig -> Text
-getPostgresHost = postgresHost
+getPostgresSockAddr :: PostgresConfig -> SockAddr
+getPostgresSockAddr (PostgresConfig addr) = addr
 
-getPostgresPort :: PostgresConfig -> PortNumber
-getPostgresPort = postgresPort
+mkPostgresAuthDataStore
+    :: (Applicative m, MonadIO m, MonadLogger m)
+    => PostgresConfig -> m AuthDataStore
+mkPostgresAuthDataStore _cfg = mkMemoryAuthDataStore Map.empty

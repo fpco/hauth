@@ -1,27 +1,33 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Network.HAuth.DataStore.Consul where
+module Network.HAuth.DataStore.Consul
+       (ConsulConfig, mkConsulConfig, getConsulSockAddr,
+        setConsulSockAddr, mkConsulAuthDataStore)
+       where
 
-import Network.Socket (PortNumber)
-import Data.Text (Text)
+#if __GLASGOW_HASKELL__ < 710
+import           Control.Applicative (Applicative, pure)
+#endif
+import           Control.Monad.IO.Class (MonadIO)
+import           Control.Monad.Logger (MonadLogger)
+import qualified Data.Map.Strict as Map
+import           Network.HAuth.DataStore.Memory
+import           Network.HAuth.Types
+import           Network.Socket (SockAddr(..))
 
-defaultConsulConfig :: ConsulConfig
-defaultConsulConfig = ConsulConfig "127.0.0.1" 8500
+data ConsulConfig = ConsulConfig SockAddr
 
-setConsulHost :: ConsulConfig -> Text -> ConsulConfig
-setConsulHost cc h =
-    cc
-    { consulHost = h
-    }
+mkConsulConfig :: SockAddr -> ConsulConfig
+mkConsulConfig = ConsulConfig
 
-setConsulPort :: ConsulConfig -> PortNumber -> ConsulConfig
-setConsulPort cc p =
-    cc
-    { consulPort = p
-    }
+setConsulSockAddr :: ConsulConfig -> SockAddr -> ConsulConfig
+setConsulSockAddr _ = ConsulConfig
 
-getConsulHost :: ConsulConfig -> Text
-getConsulHost = consulHost
+getConsulSockAddr :: ConsulConfig -> SockAddr
+getConsulSockAddr (ConsulConfig addr) = addr
 
-getConsulPort :: ConsulConfig -> PortNumber
-getConsulPort = consulPort
+mkConsulAuthDataStore
+    :: (Applicative m, MonadIO m, MonadLogger m)
+    => ConsulConfig -> m AuthDataStore
+mkConsulAuthDataStore _cfg = mkMemoryAuthDataStore Map.empty

@@ -1,8 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Network.HAuth.Types.Auth where
 
 import Data.ByteString (ByteString(..))
+import Data.Aeson
+import Data.Aeson.TH
 
 data AuthAttrKey
     = IdKey
@@ -18,7 +21,7 @@ data AuthAttrVal
     | NonceVal { nonceVal :: ByteString }
     | ExtVal { extVal :: ByteString }
     | MacVal { macVal :: ByteString }
-    deriving (Eq,Show)
+    deriving (Eq,Ord,Show)
 
 type AuthAttribute = (AuthAttrKey, AuthAttrVal)
 
@@ -26,23 +29,23 @@ type AuthHeader = [AuthAttribute]
 
 data ID =
     ID ByteString
-    deriving (Eq,Show)
+    deriving (Eq,Ord,Show)
 
 data TS =
     TS Integer
-    deriving (Eq,Show)
+    deriving (Eq,Ord,Show)
 
 data Nonce =
     Nonce ByteString
-    deriving (Eq,Show)
+    deriving (Eq,Ord,Show)
 
 data Ext =
     Ext ByteString
-    deriving (Eq,Show)
+    deriving (Eq,Ord,Show)
 
 data Mac =
     Mac ByteString
-    deriving (Eq,Show)
+    deriving (Eq,Ord,Show)
 
 data Auth = Auth
     { id' :: ID
@@ -50,4 +53,13 @@ data Auth = Auth
     , nonce :: Nonce
     , ext :: Maybe Ext
     , mac :: Mac
-    } deriving (Eq,Show)
+    }
+    deriving (Eq,Ord,Show)
+
+data AuthInvalid = AuthInvalid
+    { message :: String
+    , requestId :: String
+    }
+    deriving (Eq,Ord,Show)
+
+$( deriveJSON defaultOptions ''AuthInvalid )

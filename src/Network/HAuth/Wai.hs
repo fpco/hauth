@@ -1,10 +1,16 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module Network.HAuth.Wai where
 
+import Control.Monad.Logger (logInfo)
+import Data.UUID.V4 (nextRandom)
 import Network.HAuth.Types
-import Network.Wai
+import Network.Wai (Middleware)
 
 hauth :: SecretDataStore -> AuthDataStore -> Middleware
-hauth cc pc app = app
+hauth cc pc app rq = do
+    app rq
 
 -- Create a mvar to house the keys
 -- Create a request UUID
