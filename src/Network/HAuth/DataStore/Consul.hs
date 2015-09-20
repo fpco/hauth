@@ -1,9 +1,11 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Network.HAuth.DataStore.Consul
-       (ConsulConfig, mkConsulConfig, getConsulSockAddr,
-        setConsulSockAddr, mkConsulAuthDataStore)
+       (ConsulConfig, defaultConsulConfig, getConsulHostName,
+        setConsulHostName, getConsulPortNumber, setConsulPortNumber,
+        mkConsulSecretDataStore)
        where
 
 #if __GLASGOW_HASKELL__ < 710
@@ -14,20 +16,35 @@ import           Control.Monad.Logger (MonadLogger)
 import qualified Data.Map.Strict as Map
 import           Network.HAuth.DataStore.Memory
 import           Network.HAuth.Types
-import           Network.Socket (SockAddr(..))
+import           Network.Socket (HostName(..), PortNumber(..))
 
-data ConsulConfig = ConsulConfig SockAddr
+data ConsulConfig = ConsulConfig
+    { consulHostName :: HostName
+    , consulPortNumber :: PortNumber
+    } deriving (Show)
 
-mkConsulConfig :: SockAddr -> ConsulConfig
-mkConsulConfig = ConsulConfig
+defaultConsulConfig :: ConsulConfig
+defaultConsulConfig = ConsulConfig "127.0.0.1" 8500
 
-setConsulSockAddr :: ConsulConfig -> SockAddr -> ConsulConfig
-setConsulSockAddr _ = ConsulConfig
+setConsulHostName :: ConsulConfig -> HostName -> ConsulConfig
+setConsulHostName cfg name =
+    cfg
+    { consulHostName = name
+    }
 
-getConsulSockAddr :: ConsulConfig -> SockAddr
-getConsulSockAddr (ConsulConfig addr) = addr
+setConsulPortNumber :: ConsulConfig -> PortNumber -> ConsulConfig
+setConsulPortNumber cfg port =
+    cfg
+    { consulPortNumber = port
+    }
 
-mkConsulAuthDataStore
+getConsulHostName :: ConsulConfig -> HostName
+getConsulHostName ConsulConfig{..} = consulHostName
+
+getConsulPortNumber :: ConsulConfig -> PortNumber
+getConsulPortNumber ConsulConfig{..} = consulPortNumber
+
+mkConsulSecretDataStore
     :: (Applicative m, MonadIO m, MonadLogger m)
-    => ConsulConfig -> m AuthDataStore
-mkConsulAuthDataStore _cfg = mkMemoryAuthDataStore Map.empty
+    => ConsulConfig -> m SecretDataStore
+mkConsulSecretDataStore _cfg = mkMemorySecretDataStore Map.empty
