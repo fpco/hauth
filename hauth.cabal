@@ -13,6 +13,10 @@ category:            Network
 build-type:          Simple
 cabal-version:       >=1.10
 
+flag example
+  description: enable example-hauth executable
+  default:     False
+
 library
   default-language:    Haskell2010
   exposed-modules:     Network.HAuth
@@ -36,6 +40,7 @@ library
                      , containers
                      , cryptohash
                      , http-types
+                     , monad-control
                      , monad-logger
                      , mtl
                      , network
@@ -47,7 +52,7 @@ library
                      , void
                      , wai
 
-test-suite test
+test-suite test-hauth
   default-language:    Haskell2010
   hs-source-dirs:      tests
   main-is:             Main.hs
@@ -59,3 +64,24 @@ test-suite test
                      , hspec-attoparsec
                      , tasty
                      , tasty-hspec
+
+executable example-hauth
+  if flag(example)
+    buildable: True
+  else
+    buildable: False
+  default-language:    Haskell2010
+  hs-source-dirs:      example
+  main-is:             Main.hs
+  build-depends:       async
+                     , base >=4.7 && <5
+                     , bytestring
+                     , hauth
+                     , monad-control
+                     , monad-logger
+                     , transformers
+                     , void
+                     , wai
+                     , wai-app-static
+                     , wai-extra
+                     , warp
