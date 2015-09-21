@@ -17,6 +17,7 @@ import qualified Data.Map.Strict as Map
 import           Network.HAuth.DataStore.Memory
 import           Network.HAuth.Types
 import           Network.Socket (HostName(..), PortNumber(..))
+import           Network.Wai.Middleware.Consul
 
 data ConsulConfig = ConsulConfig
     { consulHostName :: HostName
@@ -47,4 +48,16 @@ getConsulPortNumber ConsulConfig{..} = consulPortNumber
 mkConsulSecretDataStore
     :: (Applicative m, MonadIO m, MonadLogger m)
     => ConsulConfig -> m SecretDataStore
-mkConsulSecretDataStore _cfg = mkMemorySecretDataStore Map.empty
+mkConsulSecretDataStore ConsulConfig{..} =
+    pure
+        SecretDataStore
+        { ..
+        }
+  where
+    getSecret id = do
+        -- get data from our our memory stm
+          -- get our local stm threads
+            -- if we don't have a local stm thread for id
+              -- then add a local stm thread for id
+        return
+            Nothing
