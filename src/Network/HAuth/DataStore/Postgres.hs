@@ -1,6 +1,14 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE EmptyDataDecls             #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
 
 module Network.HAuth.DataStore.Postgres
        (PostgresConfig, defaultPostgresConfig, getPostgresHostName,
@@ -11,9 +19,14 @@ module Network.HAuth.DataStore.Postgres
 #if __GLASGOW_HASKELL__ < 710
 import           Control.Applicative (Applicative, pure)
 #endif
-import           Control.Monad.IO.Class (MonadIO)
-import           Control.Monad.Logger (MonadLogger)
+import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Control.Monad.Logger (MonadLogger, runStderrLoggingT)
 import qualified Data.Map.Strict as Map
+import           Database.Persist
+import           Database.Persist.Postgresql
+import           Database.Persist.Sql
+import           Database.Persist.Sqlite
+import           Database.Persist.TH
 import           Network.HAuth.DataStore.Memory
 import           Network.HAuth.Types
 import           Network.Socket (HostName(..), PortNumber(..))
@@ -48,3 +61,51 @@ mkPostgresAuthDataStore
     :: (Applicative m, MonadIO m, MonadLogger m)
     => PostgresConfig -> m AuthDataStore
 mkPostgresAuthDataStore _cfg = mkMemoryAuthDataStore Map.empty
+
+share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
+AuthEntry
+    authId String
+    ts Int
+    nonce String
+    ext String Maybe
+    mac String
+    deriving Show
+|]
+
+runSqliteTest :: IO ()
+runSqliteTest =
+    runSqlite
+        ":memory:"
+        (do testId <-
+                insert
+                    (AuthEntry
+                         "test"
+                         11
+                         "nonce"
+                         Nothing
+                         "1238g7019381023980123")
+            test <- get testId
+            liftIO (print test))
+
+runPostgresTest :: IO ()
+runPostgresTest =
+    runStderrLoggingT
+        (withPostgresqlPool
+             "host=localhost dbname=test user=test password=test port=5432"
+             10
+             (\pool ->
+                   liftIO
+                       (do flip
+                               runSqlPersistMPool
+                               pool
+                               (do runMigration migrateAll
+                                   testId <-
+                                       insert
+                                           (AuthEntry
+                                                "test"
+                                                11
+                                                "nonce"
+                                                Nothing
+                                                "1238g7019381023980123")
+                                   test <- get testId
+                                   liftIO (print test)))))

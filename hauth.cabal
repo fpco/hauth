@@ -39,6 +39,7 @@ library
                      , consul-haskell
                      , containers
                      , cryptohash
+                     , esqueleto
                      , http-types
                      , monad-control
                      , monad-logger
@@ -46,6 +47,10 @@ library
                      , network
                      , persistent
                      , persistent-postgresql
+                     , persistent-sqlite
+                     , persistent-template
+                     , stm
+                     , stm-containers
                      , text
                      , transformers
                      , uuid
