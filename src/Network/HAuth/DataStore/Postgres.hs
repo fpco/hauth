@@ -60,7 +60,10 @@ getPostgresPortNumber PostgresConfig{..} = postgresPortNumber
 mkPostgresAuthDataStore
     :: (Applicative m, MonadIO m, MonadLogger m)
     => PostgresConfig -> m AuthDataStore
-mkPostgresAuthDataStore _cfg = mkMemoryAuthDataStore Map.empty
+mkPostgresAuthDataStore _cfg = pure AuthDataStore{..}
+  where
+    addAuth auth = pure ()
+    isAuth (id, ts, nonce) = pure False
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 AuthEntry
