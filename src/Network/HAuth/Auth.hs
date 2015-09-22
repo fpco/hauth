@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Network.HAuth.Auth where
 
@@ -7,16 +8,20 @@ import Crypto.MAC (HMAC(..), hmac)
 import Data.ByteString (ByteString, intercalate)
 import Data.ByteString.Char8 (pack)
 import Data.Byteable (toBytes)
-import Network.HAuth.Types.Auth
+import Network.HAuth.Types
+import Network.HTTP.Types
+import Network.Wai
 
-mkAuth :: ByteString -> ID -> TS -> Nonce -> Maybe Ext -> Auth
-mkAuth key id ts nonce ext = Auth id ts nonce ext (authMac key ts nonce)
-
-authMac :: ByteString -> TS -> Nonce -> Mac
-authMac key (TS t) (Nonce n) =
-  -- TODO: intercalate "\n" [ts, nonce, requestMethod, rawPathInfo,
-  -- lookup "host" requestHeaders, 443, ""]
-    let attrs = [pack (show t), n]
+authMac :: TS -> Nonce -> Maybe Ext -> Request -> Secret -> Mac
+authMac (TS ts) (Nonce nonce) ext rq (Secret key) =
+    let attrs =
+            [ (pack . show) ts
+            , nonce
+            , (requestMethod rq)
+            , (rawPathInfo rq)
+            , maybe "" id (lookup "host" (requestHeaders rq))
+            , (pack . show) 443
+            , maybe "" (\(Ext e) -> e) ext]
         hmac' :: HMAC SHA256
         hmac' = hmac key (intercalate "\n" attrs)
     in Mac (toBytes hmac')

@@ -49,13 +49,13 @@ hauthMiddleware secretDS authDS app rq respond =
                     Just auth -> do
                         $logInfo ((T.pack . show) auth)
                         checkAuthMac reqId auth
-    checkAuthMac reqId auth = do
-        secret <- getSecret secretDS (id' auth)
+    checkAuthMac reqId auth@Auth{..} = do
+        secret <- getSecret secretDS id'
         case secret of
             Nothing -> liftIO (respond (authHeaderInvalid "key missing" reqId))
-            Just (Secret key) ->
-                let computedMac = authMac key (ts auth) (nonce auth)
-                in if computedMac /= mac auth
+            Just secret ->
+                let computedMac = authMac ts nonce ext rq secret
+                in if computedMac /= mac
                        then liftIO
                                 (respond
                                      (authHeaderInvalid "invalid mac" reqId))
