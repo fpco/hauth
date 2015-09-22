@@ -10,19 +10,13 @@ import Data.Byteable (toBytes)
 import Network.HAuth.Types.Auth
 
 mkAuth :: ByteString -> ID -> TS -> Nonce -> Maybe Ext -> Auth
-mkAuth key id ts nonce ext =
-  Auth id ts nonce ext (authMac key id ts nonce ext)
+mkAuth key id ts nonce ext = Auth id ts nonce ext (authMac key ts nonce)
 
-authMac :: ByteString -> ID -> TS -> Nonce -> Maybe Ext -> Mac
-authMac key (ID i) (TS t) (Nonce n) e =
-    let attrs = [i, pack (show t), n]
+authMac :: ByteString -> TS -> Nonce -> Mac
+authMac key (TS t) (Nonce n) =
+  -- TODO: intercalate "\n" [ts, nonce, requestMethod, rawPathInfo,
+  -- lookup "host" requestHeaders, 443, ""]
+    let attrs = [pack (show t), n]
         hmac' :: HMAC SHA256
-        hmac' =
-            hmac
-                key
-                (intercalate
-                     "\n"
-                     (case e of
-                          (Just (Ext e')) -> attrs ++ [e']
-                          Nothing -> attrs))
+        hmac' = hmac key (intercalate "\n" attrs)
     in Mac (toBytes hmac')

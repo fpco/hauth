@@ -22,24 +22,20 @@ library
   exposed-modules:     Network.HAuth
                        Network.HAuth.Auth
                        Network.HAuth.DataStore.Consul
-                       Network.HAuth.DataStore.Memory
                        Network.HAuth.DataStore.Postgres
                        Network.HAuth.Parse
                        Network.HAuth.Types
                        Network.HAuth.Types.Auth
                        Network.HAuth.Types.DataStore
                        Network.HAuth.Types.Secret
-                       Network.HAuth.Wai
   hs-source-dirs:      src
   build-depends:       aeson
                      , attoparsec
                      , base >=4.7 && <5
                      , byteable
                      , bytestring
-                     , consul-haskell
                      , containers
                      , cryptohash
-                     , esqueleto
                      , http-types
                      , monad-control
                      , monad-logger
@@ -47,14 +43,10 @@ library
                      , network
                      , persistent
                      , persistent-postgresql
-                     , persistent-sqlite
                      , persistent-template
-                     , stm
-                     , stm-containers
                      , text
                      , transformers
                      , uuid
-                     , void
                      , wai
                      , wai-middleware-consul
 
@@ -86,7 +78,6 @@ executable example-hauth
                      , monad-control
                      , monad-logger
                      , transformers
-                     , void
                      , wai
                      , wai-app-static
                      , wai-extra

@@ -25,9 +25,7 @@ import qualified Data.Map.Strict as Map
 import           Database.Persist
 import           Database.Persist.Postgresql
 import           Database.Persist.Sql
-import           Database.Persist.Sqlite
 import           Database.Persist.TH
-import           Network.HAuth.DataStore.Memory
 import           Network.HAuth.Types
 import           Network.Socket (HostName(..), PortNumber(..))
 
@@ -58,12 +56,12 @@ getPostgresPortNumber :: PostgresConfig -> PortNumber
 getPostgresPortNumber PostgresConfig{..} = postgresPortNumber
 
 mkPostgresAuthDataStore
-    :: (Applicative m, MonadIO m, MonadLogger m)
+    :: (Applicative m)
     => PostgresConfig -> m AuthDataStore
 mkPostgresAuthDataStore _cfg = pure AuthDataStore{..}
   where
     addAuth auth = pure ()
-    isAuth (id, ts, nonce) = pure False
+    isAuth auth = pure False
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 AuthEntry
@@ -74,21 +72,6 @@ AuthEntry
     mac String
     deriving Show
 |]
-
-runSqliteTest :: IO ()
-runSqliteTest =
-    runSqlite
-        ":memory:"
-        (do testId <-
-                insert
-                    (AuthEntry
-                         "test"
-                         11
-                         "nonce"
-                         Nothing
-                         "1238g7019381023980123")
-            test <- get testId
-            liftIO (print test))
 
 runPostgresTest :: IO ()
 runPostgresTest =

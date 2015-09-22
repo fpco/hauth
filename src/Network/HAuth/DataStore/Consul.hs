@@ -14,7 +14,6 @@ import           Control.Applicative (Applicative, pure)
 import           Control.Monad.IO.Class (MonadIO)
 import           Control.Monad.Logger (MonadLogger)
 import qualified Data.Map.Strict as Map
-import           Network.HAuth.DataStore.Memory
 import           Network.HAuth.Types
 import           Network.Socket (HostName(..), PortNumber(..))
 import           Network.Wai.Middleware.Consul
@@ -46,7 +45,7 @@ getConsulPortNumber :: ConsulConfig -> PortNumber
 getConsulPortNumber ConsulConfig{..} = consulPortNumber
 
 mkConsulSecretDataStore
-    :: (Applicative m, MonadIO m, MonadLogger m)
+    :: (Applicative m)
     => ConsulConfig -> m SecretDataStore
 mkConsulSecretDataStore ConsulConfig{..} =
     pure

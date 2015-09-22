@@ -16,6 +16,6 @@ data SecretDataStore = SecretDataStore
     }
 
 data AuthDataStore = AuthDataStore
-    { addAuth :: (Applicative m, MonadIO m, MonadLogger m) => Auth -> m ()
-    , isAuth :: (Applicative m, MonadIO m, MonadLogger m) => (ID, TS, Nonce) -> m Bool
+    { isAuth :: (Applicative m, MonadIO m, MonadLogger m) => Auth -> m Bool
+    , addAuth :: (Applicative m, MonadIO m, MonadLogger m) => Auth -> m ()
     }
