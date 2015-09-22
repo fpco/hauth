@@ -13,20 +13,16 @@ import Network.HAuth.Types
 import Network.HTTP.Types
 import Network.Wai
 
-authMac :: Auth -> Request -> Secret -> Mac
-authMac Auth{ts = (TS t),nonce = (Nonce n),..} rq (Secret key) =
+authMac :: TS -> Nonce -> Maybe Ext -> Request -> Secret -> Mac
+authMac (TS ts) (Nonce nonce) ext rq (Secret key) =
     let attrs =
-            [ (pack . show) t
-            , n
+            [ (pack . show) ts
+            , nonce
             , (requestMethod rq)
             , (rawPathInfo rq)
             , maybe "" id (lookup "host" (requestHeaders rq))
             , (pack . show) 443
-            , maybe
-                  ""
-                  (\(Ext e) ->
-                        e)
-                  ext]
+            , maybe "" (\(Ext e) -> e) ext]
         hmac' :: HMAC SHA256
         hmac' = hmac key ((intercalate "\n" attrs) <> "\n")
     in Mac (toBytes hmac')

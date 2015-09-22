@@ -51,7 +51,7 @@ hauthMiddleware secretDS authDS app rq respond =
         case secret of
             Nothing -> liftIO (respond (authHeaderInvalid "invalid id" reqId))
             Just secret ->
-                let computedMac = authMac auth rq secret
+                let computedMac = authMac ts nonce ext rq secret
                 in if computedMac /= mac
                        then liftIO
                                 (respond
