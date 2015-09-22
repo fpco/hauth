@@ -16,6 +16,7 @@ import           Control.Monad.Logger
        (runStdoutLoggingT, MonadLogger, MonadLoggerIO, logDebug, logInfo)
 import           Data.Aeson (encode)
 import           Data.Attoparsec.ByteString (parseOnly)
+import           Data.ByteString.Char8 (pack)
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Data.Time.Clock.POSIX (getPOSIXTime)
@@ -34,25 +35,21 @@ hauthMiddleware secretDS authDS app rq respond =
     checkAuthHeader = do
         reqId <- liftIO nextRandom
         case lookup hAuthorization (requestHeaders rq) of
-            Nothing -> liftIO (respond authHeaderMissing)
+            Nothing -> liftIO (respond (authHeaderInvalid "missing" reqId))
             Just authHeader -> do
                 case either
                          (const Nothing)
                          authHeaderToAuth
                          (parseOnly authP authHeader) of
                     Nothing ->
-                        liftIO
-                            (respond
-                                 (authHeaderInvalid
-                                      "invalid authorization header"
-                                      reqId))
+                        liftIO (respond (authHeaderInvalid "missing" reqId))
                     Just auth -> do
                         $logInfo ((T.pack . show) auth)
                         checkAuthMac reqId auth
     checkAuthMac reqId auth@Auth{..} = do
         secret <- getSecret secretDS id'
         case secret of
-            Nothing -> liftIO (respond (authHeaderInvalid "key missing" reqId))
+            Nothing -> liftIO (respond (authHeaderInvalid "invalid id" reqId))
             Just secret ->
                 let computedMac = authMac ts nonce ext rq secret
                 in if computedMac /= mac
@@ -72,11 +69,13 @@ hauthMiddleware secretDS authDS app rq respond =
             else logAndStoreAuth reqId auth
     logAndStoreAuth reqId auth = do
         addAuth authDS auth
-        $logInfo ("Authorization successful " <> T.pack (show auth))
+        $logInfo ("authorization successful " <> T.pack (show auth))
         liftIO (app rq respond)
-    authHeaderMissing = responseLBS status401 [("WWW-Authenticate", "MAC")] ""
     authHeaderInvalid message reqId =
         responseLBS
-            status400
-            []
-            (encode (AuthInvalid message (toString reqId)))
+            status401
+            [("WWW-Authenticate", "MAC error=\"" <> pack message <> "\"")]
+            (encode
+                 (AuthInvalid
+                      ("invalid authorization header: " <> message)
+                      (toString reqId)))
