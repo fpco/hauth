@@ -8,6 +8,7 @@ import Crypto.MAC (HMAC(..), hmac)
 import Data.ByteString (ByteString, intercalate)
 import Data.ByteString.Char8 (pack)
 import Data.Byteable (toBytes)
+import Data.Monoid ((<>))
 import Network.HAuth.Types
 import Network.HTTP.Types
 import Network.Wai
@@ -23,5 +24,5 @@ authMac (TS ts) (Nonce nonce) ext rq (Secret key) =
             , (pack . show) 443
             , maybe "" (\(Ext e) -> e) ext]
         hmac' :: HMAC SHA256
-        hmac' = hmac key (intercalate "\n" attrs)
+        hmac' = hmac key ((intercalate "\n" attrs) <> "\n")
     in Mac (toBytes hmac')
