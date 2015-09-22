@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Network.HAuth (module Network.HAuth.Types, hauthMiddleware)
@@ -15,6 +16,7 @@ import           Data.Aeson (encode)
 import           Data.Attoparsec.ByteString (parseOnly)
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
+import           Data.Time.Clock.POSIX (getPOSIXTime)
 import           Data.UUID (toString)
 import           Data.UUID.V4 (nextRandom)
 import           Network.HAuth.Auth
@@ -60,9 +62,9 @@ checkAuthMac secretDS authDS reqId auth app rq respond = do
                             (respond (authHeaderInvalid "invalid mac" reqId))
                    else checkAuthTS secretDS authDS reqId auth app rq respond
 
-checkAuthTS secretDS authDS reqId auth app rq respond = do
-    currentTS <- error "FIXME"
-    if currentTS /= ts auth
+checkAuthTS secretDS authDS reqId auth@Auth{ts=TS ts',..} app rq respond = do
+    currentTS <- round <$> liftIO getPOSIXTime
+    if abs (currentTS - ts') > 120
         then liftIO (respond (authHeaderInvalid "invalid ts" reqId))
         else checkAuthStore secretDS authDS reqId auth app rq respond
 
@@ -72,7 +74,7 @@ checkAuthStore secretDS authDS reqId auth app rq respond = do
         then liftIO (respond (authHeaderInvalid "duplicate request" reqId))
         else logAndStoreAuth secretDS authDS reqId auth app rq respond
 
-logAndStoreAuth _secretDS authDS reqId auth app rq respond = do
+logAndStoreAuth secretDS authDS reqId auth app rq respond = do
     addAuth authDS auth
     $logInfo ("Authorization successful " <> T.pack (show auth))
     liftIO (app rq respond)

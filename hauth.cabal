@@ -45,6 +45,7 @@ library
                      , persistent-postgresql
                      , persistent-template
                      , text
+                     , time
                      , transformers
                      , uuid
                      , wai
