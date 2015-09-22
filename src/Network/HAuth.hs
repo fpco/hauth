@@ -1,5 +1,7 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -17,7 +19,7 @@ import           Data.Attoparsec.ByteString (parseOnly)
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import           Data.Time.Clock.POSIX (getPOSIXTime)
-import           Data.UUID (toString)
+import           Data.UUID (UUID, toString)
 import           Data.UUID.V4 (nextRandom)
 import           Network.HAuth.Auth
 import           Network.HAuth.Parse
@@ -26,60 +28,55 @@ import           Network.HTTP.Types (hAuthorization, status400, status401)
 import           Network.Wai (responseLBS, requestHeaders, Middleware)
 
 hauthMiddleware :: SecretDataStore -> AuthDataStore -> Middleware
-hauthMiddleware secretDS authDS app rq respond = do
-    reqId <- toString <$> nextRandom
-    runStdoutLoggingT (checkAuthHeader secretDS authDS reqId app rq respond)
-
-checkAuthHeader secretDS authDS reqId app rq respond =
-    case lookup hAuthorization (requestHeaders rq) of
-        Nothing -> liftIO (respond authHeaderMissing)
-        Just authHeader ->
-            case authHeaderToAuth <$> parseOnly authP authHeader of
-                Left err ->
-                    liftIO
-                        (respond
-                             (authHeaderInvalid
-                                  "invalid authorization header"
-                                  reqId))
-                Right Nothing ->
-                    liftIO
-                        (respond
-                             (authHeaderInvalid
-                                  "invalid authorization header"
-                                  reqId))
-                Right (Just auth) -> do
-                    $logInfo ((T.pack . show) auth)
-                    checkAuthMac secretDS authDS reqId auth app rq respond
-
-checkAuthMac secretDS authDS reqId auth app rq respond = do
-    secret <- getSecret secretDS (id' auth)
-    case secret of
-        Nothing -> liftIO (respond (authHeaderInvalid "no key" reqId))
-        Just (Secret key) ->
-            let computedMac = authMac key (ts auth) (nonce auth)
-            in if computedMac /= mac auth
-                   then liftIO
-                            (respond (authHeaderInvalid "invalid mac" reqId))
-                   else checkAuthTS secretDS authDS reqId auth app rq respond
-
-checkAuthTS secretDS authDS reqId auth@Auth{ts=TS ts',..} app rq respond = do
-    currentTS <- round <$> liftIO getPOSIXTime
-    if abs (currentTS - ts') > 120
-        then liftIO (respond (authHeaderInvalid "invalid ts" reqId))
-        else checkAuthStore secretDS authDS reqId auth app rq respond
-
-checkAuthStore secretDS authDS reqId auth app rq respond = do
-    dupe <- isAuth authDS auth
-    if dupe
-        then liftIO (respond (authHeaderInvalid "duplicate request" reqId))
-        else logAndStoreAuth secretDS authDS reqId auth app rq respond
-
-logAndStoreAuth secretDS authDS reqId auth app rq respond = do
-    addAuth authDS auth
-    $logInfo ("Authorization successful " <> T.pack (show auth))
-    liftIO (app rq respond)
-
-authHeaderMissing = responseLBS status401 [("WWW-Authenticate", "MAC")] ""
-
-authHeaderInvalid message reqId =
-    responseLBS status400 [] (encode (AuthInvalid message reqId))
+hauthMiddleware secretDS authDS app rq respond =
+    runStdoutLoggingT checkAuthHeader
+  where
+    checkAuthHeader = do
+        reqId <- liftIO nextRandom
+        case lookup hAuthorization (requestHeaders rq) of
+            Nothing -> liftIO (respond authHeaderMissing)
+            Just authHeader -> do
+                case either
+                         (const Nothing)
+                         authHeaderToAuth
+                         (parseOnly authP authHeader) of
+                    Nothing ->
+                        liftIO
+                            (respond
+                                 (authHeaderInvalid
+                                      "invalid authorization header"
+                                      reqId))
+                    Just auth -> do
+                        $logInfo ((T.pack . show) auth)
+                        checkAuthMac reqId auth
+    checkAuthMac reqId auth = do
+        secret <- getSecret secretDS (id' auth)
+        case secret of
+            Nothing -> liftIO (respond (authHeaderInvalid "key missing" reqId))
+            Just (Secret key) ->
+                let computedMac = authMac key (ts auth) (nonce auth)
+                in if computedMac /= mac auth
+                       then liftIO
+                                (respond
+                                     (authHeaderInvalid "invalid mac" reqId))
+                       else checkAuthTS reqId auth
+    checkAuthTS reqId auth@Auth{ts = TS ts',..} = do
+        timeSpread <- abs . (-) ts' . floor <$> liftIO getPOSIXTime
+        if timeSpread > 120
+            then liftIO (respond (authHeaderInvalid "invalid timestamp" reqId))
+            else checkAuthStore reqId auth
+    checkAuthStore reqId auth = do
+        dupe <- isAuth authDS auth
+        if dupe
+            then liftIO (respond (authHeaderInvalid "duplicate request" reqId))
+            else logAndStoreAuth reqId auth
+    logAndStoreAuth reqId auth = do
+        addAuth authDS auth
+        $logInfo ("Authorization successful " <> T.pack (show auth))
+        liftIO (app rq respond)
+    authHeaderMissing = responseLBS status401 [("WWW-Authenticate", "MAC")] ""
+    authHeaderInvalid message reqId =
+        responseLBS
+            status400
+            []
+            (encode (AuthInvalid message (toString reqId)))
