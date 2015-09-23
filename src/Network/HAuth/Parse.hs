@@ -12,6 +12,7 @@ import           Control.Applicative ((<|>))
 import           Data.Attoparsec.ByteString
 import           Data.Attoparsec.ByteString.Char8 (char, decimal, space)
 import           Data.ByteString (ByteString)
+import           Data.ByteString.Char8 (unpack)
 import           Data.Map (Map)
 import qualified Data.Map as Map
 import           Data.Set (Set)
@@ -58,10 +59,9 @@ authHeaderToAuth hdr =
     let keySet = Set.fromList (map fst hdr)
         hdrMap = Map.fromList hdr
     in if Set.size keySet /= Map.size hdrMap
-          then Nothing
-          else Auth <$>
-               (ID . idVal <$> Map.lookup IdKey hdrMap) <*>
-               (TS . tsVal <$> Map.lookup TsKey hdrMap) <*>
-               (Nonce . nonceVal <$> Map.lookup NonceKey hdrMap) <*>
-               Just (Ext . extVal <$> Map.lookup ExtKey hdrMap) <*>
-               (Mac . macVal <$> Map.lookup MacKey hdrMap)
+           then Nothing
+           else Auth <$> (idVal <$> Map.lookup IdKey hdrMap) <*>
+                (fromInteger . tsVal <$> Map.lookup TsKey hdrMap) <*>
+                (nonceVal <$> Map.lookup NonceKey hdrMap) <*>
+                Just (extVal <$> Map.lookup ExtKey hdrMap) <*>
+                (macVal <$> Map.lookup MacKey hdrMap)

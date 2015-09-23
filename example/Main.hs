@@ -3,25 +3,29 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
-#if __GLASGOW_HASKELL__ < 710
-import Control.Applicative ((<$>), (<*>), Applicative, pure)
-#endif
-import Control.Monad (void)
-import Control.Monad.IO.Class (MonadIO(..))
-import Control.Monad.Trans.Control (MonadBaseControl(..))
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Logger (runNoLoggingT, runStderrLoggingT)
 import Network.HAuth
-import Network.HAuth.DataStore.Consul
-import Network.HAuth.DataStore.Postgres
 import Network.Wai (Application, Middleware)
 import Network.Wai.Application.Static
        (staticApp, defaultWebAppSettings)
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.RequestLogger (logStdoutDev)
+import Database.Persist
+import Database.Persist.Postgresql
+import Database.Persist.Sql
 
 main :: IO ()
 main = do
-    secretDS <- mkConsulSecretDataStore defaultConsulConfig
-    authDS <- mkPostgresAuthDataStore defaultPostgresConfig
-    let middleware = logStdoutDev . hauthMiddleware secretDS authDS
-        webApp = staticApp (defaultWebAppSettings ".")
-    run 8080 (middleware webApp)
+    -- TODO opt.parse & yaml options for
+    --   Postgres: host, db, user, pass & port
+    --   Consul: host, acl
+    runStderrLoggingT
+        (withPostgresqlPool
+             "host=localhost dbname=hauth user=hauth password=hauth port=5432"
+             10
+             (\pool ->
+                   do runSqlPool (runMigration migrateAll) pool
+                      let middleware = logStdoutDev . hauthMiddleware pool
+                          webApp = staticApp (defaultWebAppSettings ".")
+                      liftIO (run 8080 (middleware webApp))))

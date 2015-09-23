@@ -176,8 +176,8 @@ authHeaderToAuthSpec =
                          , (MacKey, MacVal "af0")] `shouldBe`
                          Just
                              (Auth
-                                  (ID "lol")
-                                  (TS 890)
-                                  (Nonce "487")
+                                  ("lol")
+                                  (890)
+                                  ("487")
                                   Nothing
-                                  (Mac "af0"))
+                                  ("af0"))

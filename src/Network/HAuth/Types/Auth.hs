@@ -1,11 +1,25 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE EmptyDataDecls             #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE KindSignatures             #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
 
 module Network.HAuth.Types.Auth where
 
 import Data.ByteString (ByteString(..))
 import Data.Aeson
 import Data.Aeson.TH
+import Database.Persist
+import Database.Persist.Sql
+import Database.Persist.TH
 
 data AuthAttrKey
     = IdKey
@@ -27,34 +41,15 @@ type AuthAttribute = (AuthAttrKey, AuthAttrVal)
 
 type AuthHeader = [AuthAttribute]
 
-data ID =
-    ID ByteString
-    deriving (Eq,Ord,Show)
-
-data TS =
-    TS Integer
-    deriving (Eq,Ord,Show)
-
-data Nonce =
-    Nonce ByteString
-    deriving (Eq,Ord,Show)
-
-data Ext =
-    Ext ByteString
-    deriving (Eq,Ord,Show)
-
-data Mac =
-    Mac ByteString
-    deriving (Eq,Ord,Show)
-
-data Auth = Auth
-    { id' :: ID
-    , ts :: TS
-    , nonce :: Nonce
-    , ext :: Maybe Ext
-    , mac :: Mac
-    }
-    deriving (Eq,Ord,Show)
+share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
+Auth
+    id' ByteString
+    ts Int
+    nonce ByteString
+    ext ByteString Maybe
+    mac ByteString
+    deriving Eq Ord Show
+|]
 
 data AuthInvalid = AuthInvalid
     { message :: String
