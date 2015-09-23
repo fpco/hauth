@@ -1,6 +1,6 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes        #-}
 
 module Network.HAuth.Parse where
 
@@ -9,14 +9,17 @@ import           Control.Applicative ((<$>), (<*>), (<|>), (<*), (*>), pure)
 #else
 import           Control.Applicative ((<|>))
 #endif
+
 import           Data.Attoparsec.ByteString
+       (takeWhile1, Parser, skipMany, option, many1, string, skip,
+        inClass)
 import           Data.Attoparsec.ByteString.Char8 (char, decimal, space)
 import           Data.ByteString (ByteString)
-import           Data.ByteString.Char8 (unpack)
-import           Data.Map (Map)
-import qualified Data.Map as Map
-import           Data.Set (Set)
-import qualified Data.Set as Set
+import           Data.ByteString.Char8 ()
+import           Data.Map ()
+import qualified Data.Map as Map (lookup, fromList, size)
+import           Data.Set ()
+import qualified Data.Set as Set (fromList, size)
 import           Network.HAuth.Types
 
 plainTextP :: Parser ByteString
@@ -38,9 +41,7 @@ idP :: Parser AuthAttribute
 idP = (,) <$> pure IdKey <*> (IdVal <$> (attrP "id" plainTextP))
 
 tsP :: Parser AuthAttribute
-tsP = (,) <$> pure TsKey <*> (TsVal <$> (attrP "ts" decimalP))
-  where
-    decimalP = toInteger <$> decimal
+tsP = (,) <$> pure TsKey <*> (TsVal <$> (attrP "ts" decimal))
 
 nonceP :: Parser AuthAttribute
 nonceP = (,) <$> pure NonceKey <*> (NonceVal <$> (attrP "nonce" plainTextP))

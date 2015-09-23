@@ -41,6 +41,7 @@ library
                      , persistent
                      , persistent-postgresql
                      , persistent-template
+                     , resource-pool
                      , text
                      , time
                      , transformers

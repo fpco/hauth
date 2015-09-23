@@ -16,30 +16,34 @@ module Network.HAuth (module Network.HAuth.Types, hauthMiddleware)
        where
 
 #if __GLASGOW_HASKELL__ < 710
-import           Control.Applicative (Applicative, (<$>), (<*>), pure)
+import           Control.Applicative ((<$>), pure)
 #endif
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Control.Monad.Logger
-       (runStdoutLoggingT, MonadLogger, MonadLoggerIO, logDebug, logInfo)
+
+import           Control.Monad (void)
+import           Control.Monad.IO.Class (MonadIO(liftIO))
+import           Control.Monad.Logger (runStdoutLoggingT, logInfo)
 import           Data.Aeson (encode)
 import           Data.Attoparsec.ByteString (parseOnly)
-import           Data.ByteString.Char8 (pack, unpack)
+import           Data.ByteString.Char8 (pack)
 import           Data.Byteable (toBytes)
 import           Data.Monoid ((<>))
-import qualified Data.Text as T
+import           Data.Pool (Pool)
+import qualified Data.Text as T (pack)
 import           Data.Time.Clock.POSIX (getPOSIXTime)
-import           Data.UUID (UUID, toString)
+import           Data.UUID (toString)
 import           Data.UUID.V4 (nextRandom)
 import           Database.Persist
-import           Database.Persist.Postgresql
-import           Database.Persist.Sql
-import           Database.Persist.TH
-import           Network.HAuth.Auth
-import           Network.HAuth.Parse
+       (Entity, PersistStore(insert), selectList, (||.), (==.))
+import           Database.Persist.Postgresql (SqlBackend, runSqlPool)
+import           Database.Persist.Sql ()
+import           Database.Persist.TH ()
+import           Network.HAuth.Auth (hmacDigest)
+import           Network.HAuth.Parse (authP, authHeaderToAuth)
 import           Network.HAuth.Types
-import           Network.HTTP.Types (hAuthorization, status400, status401)
+import           Network.HTTP.Types (status401, hAuthorization)
 import           Network.Wai (responseLBS, requestHeaders, Middleware)
 
+hauthMiddleware :: Pool SqlBackend -> Middleware
 hauthMiddleware dbpool app rq respond = runStdoutLoggingT checkAuthHeader
   where
     checkAuthHeader = do
@@ -57,12 +61,13 @@ hauthMiddleware dbpool app rq respond = runStdoutLoggingT checkAuthHeader
                         $logInfo ((T.pack . show) auth)
                         checkAuthMac reqId auth
     checkAuthMac reqId auth@Auth{..} = do
+        -- TODO query & cache changes from Consul
         secret <- (pure . Just) (Secret "abc123")
         case secret of
             Nothing -> liftIO (respond (authHeaderInvalid "invalid id" reqId))
-            Just secret ->
+            Just secret' ->
                 if authMac /=
-                   toBytes (hmacDigest authTs authNonce authExt rq secret)
+                   toBytes (hmacDigest authTs authNonce authExt rq secret')
                     then liftIO
                              (respond (authHeaderInvalid "invalid mac" reqId))
                     else checkAuthTS reqId auth
@@ -83,8 +88,10 @@ hauthMiddleware dbpool app rq respond = runStdoutLoggingT checkAuthHeader
             then liftIO (respond (authHeaderInvalid "duplicate request" reqId))
             else logAndStoreAuth reqId auth
     logAndStoreAuth reqId auth = do
-        $logInfo ("authorization successful " <> T.pack (show auth))
-        runSqlPool (insert auth) dbpool
+        $logInfo
+            ("authorization successful " <> T.pack (toString reqId) <> " " <>
+             T.pack (show auth))
+        void (runSqlPool (insert auth) dbpool)
         liftIO (app rq respond)
     authHeaderInvalid message reqId =
         responseLBS

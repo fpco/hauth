@@ -1,7 +1,7 @@
 module Network.HAuth.Types.Secret where
 
-import Data.ByteString (ByteString(..))
+import Data.ByteString (ByteString)
 
 data Secret =
-    Secret ByteString
+    Secret { secretKey :: ByteString }
     deriving (Eq,Show)

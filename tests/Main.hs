@@ -1,18 +1,19 @@
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE RankNTypes        #-}
 
 #if __GLASGOW_HASKELL__ < 710
-import           Control.Applicative ((<$>), (<*>))
+import           Control.Applicative ((<$>))
 #endif
-import qualified Data.ByteString.Char8 as B
-import           Test.Hspec
+
+import qualified Data.ByteString.Char8 as B (ByteString)
+import           Test.Hspec (shouldBe, it, describe)
 import           Test.Hspec.Attoparsec
-import           Test.Tasty
-import           Test.Tasty.Hspec
-import           Network.HAuth.Auth
+       (Source((~>)), shouldParse, shouldFailOn)
+import           Test.Tasty (TestTree, testGroup, defaultMain)
+import           Test.Tasty.Hspec (testSpec)
+import           Network.HAuth
 import           Network.HAuth.Parse
-import           Network.HAuth.Types
 
 main :: IO ()
 main = do

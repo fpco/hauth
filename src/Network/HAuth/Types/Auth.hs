@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE EmptyDataDecls             #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GADTs                      #-}
@@ -14,12 +13,12 @@
 
 module Network.HAuth.Types.Auth where
 
-import Data.ByteString (ByteString(..))
-import Data.Aeson
-import Data.Aeson.TH
-import Database.Persist
-import Database.Persist.Sql
+import Data.ByteString (ByteString)
+import Data.Aeson.TH (deriveJSON, defaultOptions)
+import Database.Persist ()
+import Database.Persist.Sql ()
 import Database.Persist.TH
+       (sqlSettings, share, persistLowerCase, mkPersist, mkMigrate)
 
 data AuthAttrKey
     = IdKey

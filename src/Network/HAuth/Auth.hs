@@ -1,5 +1,6 @@
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 module Network.HAuth.Auth where
 
@@ -9,8 +10,9 @@ import Data.ByteString (ByteString, intercalate)
 import Data.ByteString.Char8 (pack)
 import Data.Monoid ((<>))
 import Network.HAuth.Types
-import Network.HTTP.Types
+import Network.HTTP.Types ()
 import Network.Wai
+       (Request(rawPathInfo, requestHeaders, requestMethod))
 
 hmacDigest :: Int -> ByteString -> Maybe ByteString -> Request -> Secret -> HMAC SHA256
 hmacDigest ts nonce ext rq (Secret key) =
@@ -20,6 +22,6 @@ hmacDigest ts nonce ext rq (Secret key) =
             , (requestMethod rq)
             , (rawPathInfo rq)
             , maybe "" id (lookup "host" (requestHeaders rq))
-            , (pack . show) 443
+            , (pack . show) (443 :: Integer)
             , maybe "" id ext]
     in hmac key ((intercalate "\n" attrs) <> "\n")
