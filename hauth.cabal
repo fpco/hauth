@@ -78,11 +78,14 @@ executable example-hauth
   build-depends:       async
                      , base >=4.7 && <5
                      , bytestring
+                     , consul-haskell
                      , hauth
                      , monad-control
                      , monad-logger
                      , persistent
                      , persistent-postgresql
+                     , stm
+                     , stm-containers
                      , transformers
                      , wai
                      , wai-app-static

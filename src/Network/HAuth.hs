@@ -53,8 +53,11 @@ import           Network.Wai (responseLBS, requestHeaders, Middleware)
 import           STMContainers.Map (Map)
 import qualified STMContainers.Map as Map
 
-hauthMiddleware :: Pool SqlBackend -> Middleware
-hauthMiddleware dbpool app rq respond = runStdoutLoggingT checkAuthHeader
+hauthMiddleware :: ConsulClient
+                -> Map ByteString KeyValue
+                -> Pool SqlBackend
+                -> Middleware
+hauthMiddleware client cache pool app rq respond = runStdoutLoggingT checkAuthHeader
   where
     checkAuthHeader = do
         reqId <- liftIO nextRandom
@@ -71,7 +74,7 @@ hauthMiddleware dbpool app rq respond = runStdoutLoggingT checkAuthHeader
                         $logInfo ((T.pack . show) auth)
                         checkAuthMac reqId auth
     checkAuthMac reqId auth@Auth{..} = do
-        secret <- getSecret undefined undefined authId'
+        secret <- getSecret client cache authId'
         case secret of
             Nothing -> liftIO (respond (authHeaderInvalid "invalid id" reqId))
             Just secret' ->
@@ -92,7 +95,7 @@ hauthMiddleware dbpool app rq respond = runStdoutLoggingT checkAuthHeader
                      ([AuthId' ==. authId', AuthTs ==. authTs] ||.
                       [AuthId' ==. authId', AuthNonce ==. authNonce])
                      [])
-                dbpool
+                pool
         if (not . null) (results :: [Entity Auth])
             then liftIO (respond (authHeaderInvalid "duplicate request" reqId))
             else logAndStoreAuth reqId auth
@@ -100,7 +103,7 @@ hauthMiddleware dbpool app rq respond = runStdoutLoggingT checkAuthHeader
         $logInfo
             ("authorization successful " <> T.pack (toString reqId) <> " " <>
              T.pack (show auth))
-        void (runSqlPool (insert auth) dbpool)
+        void (runSqlPool (insert auth) pool)
         liftIO (app rq respond)
     authHeaderInvalid message reqId =
         responseLBS
