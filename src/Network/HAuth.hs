@@ -33,19 +33,17 @@ import           Data.ByteString.Char8 (pack)
 import           Data.Byteable (toBytes)
 import           Data.Monoid ((<>))
 import           Data.Pool (Pool)
-import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Time.Clock.POSIX (getPOSIXTime)
 import           Data.UUID (toString)
 import           Data.UUID.V4 (nextRandom)
-import           Data.Void (Void, vacuous)
+import           Data.Void (vacuous)
 import           Database.Persist
        (Entity, PersistStore(insert), selectList, (||.), (==.))
 import           Database.Persist.Postgresql (SqlBackend, runSqlPool)
 import           Database.Persist.Sql ()
 import           Database.Persist.TH ()
-import           GHC.Word
 import           Network.Consul (ConsulClient(..), KeyValue(..), getKey)
 import           Network.HAuth.Auth (hmacDigest)
 import           Network.HAuth.Parse (authP, authHeaderToAuth)
@@ -133,9 +131,6 @@ getSecret client cache authId = do
                 Nothing -> pure Nothing
   where
     second = 1000 * 1000
-    watch
-        :: (MonadBaseControl IO m, MonadIO m)
-        => Text -> Word64 -> Int -> m Void
     watch key idx backoff
       | backoff < second = watch key idx second
     watch key idx backoff
@@ -150,9 +145,6 @@ getSecret client cache authId = do
                         watchAgain key (kvModifyIndex keyValue) backoff
                     Nothing -> watchAgain key idx (backoff * 2))
             (const (watchAgain key idx (backoff * 2)))
-    watchAgain
-        :: (MonadBaseControl IO m, MonadIO m)
-        => Text -> Word64 -> Int -> m Void
     watchAgain key idx backoff = do
         threadDelay backoff
         watch key idx backoff
