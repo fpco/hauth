@@ -19,29 +19,41 @@ module Network.HAuth (module Network.HAuth.Types, hauthMiddleware)
 import           Control.Applicative ((<$>), pure)
 #endif
 
+import           Control.Concurrent.Lifted (fork, threadDelay)
+import           Control.Exception.Enclosed (catchAny)
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (MonadIO(liftIO))
 import           Control.Monad.Logger (runStdoutLoggingT, logInfo)
+import           Control.Monad.Trans.Control (MonadBaseControl(..))
+import           Control.Monad.STM (atomically)
 import           Data.Aeson (encode)
 import           Data.Attoparsec.ByteString (parseOnly)
+import           Data.ByteString (ByteString)
 import           Data.ByteString.Char8 (pack)
 import           Data.Byteable (toBytes)
 import           Data.Monoid ((<>))
 import           Data.Pool (Pool)
-import qualified Data.Text as T (pack)
+import           Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import           Data.Time.Clock.POSIX (getPOSIXTime)
 import           Data.UUID (toString)
 import           Data.UUID.V4 (nextRandom)
+import           Data.Void (Void, vacuous)
 import           Database.Persist
        (Entity, PersistStore(insert), selectList, (||.), (==.))
 import           Database.Persist.Postgresql (SqlBackend, runSqlPool)
 import           Database.Persist.Sql ()
 import           Database.Persist.TH ()
+import           GHC.Word
+import           Network.Consul (ConsulClient(..), KeyValue(..), getKey)
 import           Network.HAuth.Auth (hmacDigest)
 import           Network.HAuth.Parse (authP, authHeaderToAuth)
 import           Network.HAuth.Types
 import           Network.HTTP.Types (status401, hAuthorization)
 import           Network.Wai (responseLBS, requestHeaders, Middleware)
+import           STMContainers.Map (Map)
+import qualified STMContainers.Map as Map
 
 hauthMiddleware :: Pool SqlBackend -> Middleware
 hauthMiddleware dbpool app rq respond = runStdoutLoggingT checkAuthHeader
@@ -61,8 +73,7 @@ hauthMiddleware dbpool app rq respond = runStdoutLoggingT checkAuthHeader
                         $logInfo ((T.pack . show) auth)
                         checkAuthMac reqId auth
     checkAuthMac reqId auth@Auth{..} = do
-        -- TODO query & cache changes from Consul
-        secret <- (pure . Just) (Secret "abc123")
+        secret <- getSecret undefined undefined authId'
         case secret of
             Nothing -> liftIO (respond (authHeaderInvalid "invalid id" reqId))
             Just secret' ->
@@ -101,3 +112,47 @@ hauthMiddleware dbpool app rq respond = runStdoutLoggingT checkAuthHeader
                  (AuthInvalid
                       ("invalid authorization header: " <> message)
                       (toString reqId)))
+
+getSecret
+    :: (MonadBaseControl IO m, MonadIO m)
+    => ConsulClient -> Map ByteString KeyValue -> ByteString -> m (Maybe Secret)
+getSecret client cache authId = do
+    maybeCachedKeyValue <- (liftIO . atomically) (Map.lookup authId cache)
+    case maybeCachedKeyValue of
+        Just KeyValue{kvValue = v,..} -> (pure . Just . Secret) v
+        Nothing -> do
+            let key = T.decodeUtf8 authId
+            maybeConsulKeyVal <- getKey client key Nothing Nothing Nothing
+            case maybeConsulKeyVal of
+                Just consulKeyVal -> do
+                    (liftIO . atomically)
+                        (Map.insert consulKeyVal authId cache)
+                    (void . fork . vacuous)
+                        (watch key (kvModifyIndex consulKeyVal) second)
+                    (pure . Just . Secret . kvValue) consulKeyVal
+                Nothing -> pure Nothing
+  where
+    second = 1000 * 1000
+    watch
+        :: (MonadBaseControl IO m, MonadIO m)
+        => Text -> Word64 -> Int -> m Void
+    watch key idx backoff
+      | backoff < second = watch key idx second
+    watch key idx backoff
+      | backoff > (30 * second) = watch key idx (30 * second)
+    watch key idx backoff = do
+        catchAny
+            (do maybeKeyVal <- getKey client key (Just idx) Nothing Nothing
+                case maybeKeyVal of
+                    (Just keyValue) -> do
+                        (liftIO . atomically)
+                            (Map.insert keyValue authId cache)
+                        watchAgain key (kvModifyIndex keyValue) backoff
+                    Nothing -> watchAgain key idx (backoff * 2))
+            (const (watchAgain key idx (backoff * 2)))
+    watchAgain
+        :: (MonadBaseControl IO m, MonadIO m)
+        => Text -> Word64 -> Int -> m Void
+    watchAgain key idx backoff = do
+        threadDelay backoff
+        watch key idx backoff

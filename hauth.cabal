@@ -31,9 +31,12 @@ library
                      , base >=4.7 && <5
                      , byteable
                      , bytestring
+                     , consul-haskell
                      , containers
                      , cryptohash
+                     , enclosed-exceptions
                      , http-types
+                     , lifted-base
                      , monad-control
                      , monad-logger
                      , mtl
@@ -42,12 +45,14 @@ library
                      , persistent-postgresql
                      , persistent-template
                      , resource-pool
+                     , stm
+                     , stm-containers
                      , text
                      , time
                      , transformers
                      , uuid
+                     , void
                      , wai
-                     , wai-middleware-consul
 
 test-suite test-hauth
   default-language:    Haskell2010
