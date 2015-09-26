@@ -11,8 +11,8 @@ import           Control.Applicative ((<|>))
 #endif
 
 import           Data.Attoparsec.ByteString
-       (takeWhile1, Parser, skipMany, option, many1, string, skip,
-        inClass)
+       (takeWhile1, Parser, skipMany, skipMany1, option, many1,
+        string, skip, inClass)
 import           Data.Attoparsec.ByteString.Char8 (char, decimal, space)
 import           Data.ByteString (ByteString)
 import           Data.ByteString.Char8 ()
@@ -53,7 +53,7 @@ macP = (,) <$> pure MacKey <*> (MacVal <$> (attrP "mac" plainTextP))
 
 authHeaderP :: Parser AuthHeader
 authHeaderP =
-    skipMany space *> string "MAC" *> skipMany space *>
+    skipMany space *> string "MAC" *> skipMany1 space *>
     many1 (idP <|> tsP <|> nonceP <|> extP <|> macP)
 
 authHeaderToAuth :: AuthHeader -> Either String Auth
