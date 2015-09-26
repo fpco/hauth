@@ -15,6 +15,10 @@
 module Network.HAuth (module Network.HAuth.Types, hauthMiddleware)
        where
 
+-- TODO check that I'm returning the right 40x code as per the wiki doc
+-- TODO where do we get the 'partner name' mentioned in the wiki
+-- TODO log error on any failure
+
 #if __GLASGOW_HASKELL__ < 710
 import           Control.Applicative ((<$>), (<*), pure)
 #endif
