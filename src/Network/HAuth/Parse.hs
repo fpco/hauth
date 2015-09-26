@@ -23,8 +23,7 @@ import qualified Data.Set as Set (fromList, size)
 import           Network.HAuth.Types
 
 plainTextP :: Parser ByteString
-plainTextP = takeWhile1 (inClass "a-zA-Z0-9+/=")
-             -- TODO comparing Word8 #s is "faster"
+plainTextP = takeWhile1 (inClass "a-zA-Z0-9+/=-")
 
 attrP
     :: forall a.
@@ -52,17 +51,23 @@ extP = (,) <$> pure ExtKey <*> (ExtVal <$> (attrP "ext" plainTextP))
 macP :: Parser AuthAttribute
 macP = (,) <$> pure MacKey <*> (MacVal <$> (attrP "mac" plainTextP))
 
-authP :: Parser AuthHeader
-authP = many1 (idP <|> tsP <|> nonceP <|> extP <|> macP)
+authHeaderP :: Parser AuthHeader
+authHeaderP =
+    skipMany space *> string "MAC" *> skipMany space *>
+    many1 (idP <|> tsP <|> nonceP <|> extP <|> macP)
 
-authHeaderToAuth :: AuthHeader -> Maybe Auth
+authHeaderToAuth :: AuthHeader -> Either String Auth
 authHeaderToAuth hdr =
     let keySet = Set.fromList (map fst hdr)
         hdrMap = Map.fromList hdr
     in if Set.size keySet /= Map.size hdrMap
-           then Nothing
-           else Auth <$> (idVal <$> Map.lookup IdKey hdrMap) <*>
-                (fromInteger . tsVal <$> Map.lookup TsKey hdrMap) <*>
-                (nonceVal <$> Map.lookup NonceKey hdrMap) <*>
-                Just (extVal <$> Map.lookup ExtKey hdrMap) <*>
-                (macVal <$> Map.lookup MacKey hdrMap)
+           then Left "duplicate attributes"
+           else maybe
+                    (Left "invalid authorization")
+                    Right
+                    (Auth <$>
+                     (idVal <$> Map.lookup IdKey hdrMap) <*>
+                     (fromInteger . tsVal <$> Map.lookup TsKey hdrMap) <*>
+                     (nonceVal <$> Map.lookup NonceKey hdrMap) <*>
+                     Just (extVal <$> Map.lookup ExtKey hdrMap) <*>
+                     (macVal <$> Map.lookup MacKey hdrMap))

@@ -11,6 +11,7 @@ import           Network.Wai.Application.Static
        (staticApp, defaultWebAppSettings)
 import           Network.Wai.Handler.Warp (run)
 import           Network.Wai.Middleware.RequestLogger (logStdoutDev)
+import           Network.Socket (PortNumber(..))
 import           Database.Persist ()
 import           Database.Persist.Postgresql (withPostgresqlPool)
 import           Database.Persist.Sql (runMigration, runSqlPool)
@@ -18,7 +19,7 @@ import qualified STMContainers.Map as Map
 
 main :: IO ()
 main = do
-    client <- initializeConsulClient "127.0.0.1" 8500 Nothing
+    client <- initializeConsulClient "localhost" (PortNum 8500) Nothing
     cache <- atomically Map.new
     runStderrLoggingT
         (withPostgresqlPool
@@ -27,7 +28,6 @@ main = do
              (\pool ->
                    do runNoLoggingT (runSqlPool (runMigration migrateAll) pool)
                       let middleware =
-                              logStdoutDev .
-                              hauthMiddleware client cache pool
+                              logStdoutDev . hauthMiddleware client cache pool
                           webApp = staticApp (defaultWebAppSettings ".")
-                      liftIO (run 8080 (middleware webApp))))
+                      liftIO (run 4321 (middleware webApp))))

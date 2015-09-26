@@ -148,22 +148,22 @@ authHeaderParserSpec =
     testSpec "HAuth Auth Header Parser" $
     do describe "auth header parser" $
            do it "auth header should parse id,ts,nonce,ext & mac attributes" $
-                  do ("id=lol ts=890 nonce=487 mac=af0" :: B.ByteString) ~>
-                         authP `shouldParse`
+                  do ("MAC id=lol ts=890 nonce=487 mac=af0" :: B.ByteString) ~>
+                         authHeaderP `shouldParse`
                          [ (IdKey, IdVal "lol")
                          , (TsKey, TsVal 890)
                          , (NonceKey, NonceVal "487")
                          , (MacKey, MacVal "af0")]
-                     ("id=lol ts=890 nonce=487 ext=yay mac=af0" :: B.ByteString) ~>
-                         authP `shouldParse`
+                     ("MAC id=lol ts=890 nonce=487 ext=yay mac=af0" :: B.ByteString) ~>
+                         authHeaderP `shouldParse`
                          [ (IdKey, IdVal "lol")
                          , (TsKey, TsVal 890)
                          , (NonceKey, NonceVal "487")
                          , (ExtKey, ExtVal "yay")
                          , (MacKey, MacVal "af0")]
               it "auth header should fail if anything unknown is present" $
-                  do authP `shouldFailOn`
-                         ("lol=true id=heh ts=837 nonce=298 mac=eff" :: B.ByteString)
+                  do authHeaderP `shouldFailOn`
+                         ("MAC lol=true id=heh ts=837 nonce=298 mac=eff" :: B.ByteString)
 
 authHeaderToAuthSpec :: IO TestTree
 authHeaderToAuthSpec =
@@ -175,10 +175,4 @@ authHeaderToAuthSpec =
                          , (TsKey, TsVal 890)
                          , (NonceKey, NonceVal "487")
                          , (MacKey, MacVal "af0")] `shouldBe`
-                         Just
-                             (Auth
-                                  ("lol")
-                                  (890)
-                                  ("487")
-                                  Nothing
-                                  ("af0"))
+                         Right (Auth ("lol") (890) ("487") Nothing ("af0"))

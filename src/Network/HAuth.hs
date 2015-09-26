@@ -16,7 +16,7 @@ module Network.HAuth (module Network.HAuth.Types, hauthMiddleware)
        where
 
 #if __GLASGOW_HASKELL__ < 710
-import           Control.Applicative ((<$>), pure)
+import           Control.Applicative ((<$>), (<*), pure)
 #endif
 
 import           Control.Concurrent.Lifted (fork, threadDelay)
@@ -27,10 +27,9 @@ import           Control.Monad.Logger (runStdoutLoggingT, logInfo)
 import           Control.Monad.Trans.Control (MonadBaseControl(..))
 import           Control.Monad.STM (atomically)
 import           Data.Aeson (encode)
-import           Data.Attoparsec.ByteString (parseOnly)
+import           Data.Attoparsec.ByteString (parseOnly, endOfInput)
 import           Data.ByteString (ByteString)
 import           Data.ByteString.Char8 (pack)
-import           Data.Byteable (toBytes)
 import           Data.Monoid ((<>))
 import           Data.Pool (Pool)
 import qualified Data.Text as T
@@ -45,8 +44,8 @@ import           Database.Persist.Postgresql (SqlBackend, runSqlPool)
 import           Database.Persist.Sql ()
 import           Database.Persist.TH ()
 import           Network.Consul (ConsulClient(..), KeyValue(..), getKey)
-import           Network.HAuth.Auth (hmacDigest)
-import           Network.HAuth.Parse (authP, authHeaderToAuth)
+import           Network.HAuth.Auth
+import           Network.HAuth.Parse
 import           Network.HAuth.Types
 import           Network.HTTP.Types (status401, hAuthorization)
 import           Network.Wai (responseLBS, requestHeaders, Middleware)
@@ -57,29 +56,32 @@ hauthMiddleware :: ConsulClient
                 -> Map ByteString KeyValue
                 -> Pool SqlBackend
                 -> Middleware
-hauthMiddleware client cache pool app rq respond = runStdoutLoggingT checkAuthHeader
+hauthMiddleware client cache pool app rq respond =
+    runStdoutLoggingT checkAuthHeader
   where
     checkAuthHeader = do
         reqId <- liftIO nextRandom
         case lookup hAuthorization (requestHeaders rq) of
             Nothing -> liftIO (respond (authHeaderInvalid "missing" reqId))
-            Just authHeader ->
-                case either
-                         (const Nothing)
-                         authHeaderToAuth
-                         (parseOnly authP authHeader) of
-                    Nothing ->
-                        liftIO (respond (authHeaderInvalid "missing" reqId))
-                    Just auth -> do
-                        $logInfo ((T.pack . show) auth)
-                        checkAuthMac reqId auth
+            Just bs ->
+                case parseOnly (authHeaderP <* endOfInput) bs of
+                    Left err -> liftIO (respond (authHeaderInvalid err reqId))
+                    Right authHeader ->
+                        case authHeaderToAuth authHeader of
+                            Left err ->
+                                liftIO (respond (authHeaderInvalid err reqId))
+                            Right auth -> do
+                                $logInfo ((T.pack . show) auth)
+                                checkAuthMac reqId auth
     checkAuthMac reqId auth@Auth{..} = do
         secret <- getSecret client cache authId'
         case secret of
             Nothing -> liftIO (respond (authHeaderInvalid "invalid id" reqId))
-            Just secret' ->
-                if authMac /=
-                   toBytes (hmacDigest authTs authNonce authExt rq secret')
+            Just secret' -> do
+                let computedMac =
+                        hmacDigest authTs authNonce authExt rq secret'
+                liftIO (print computedMac)
+                if authMac /= computedMac
                     then liftIO
                              (respond (authHeaderInvalid "invalid mac" reqId))
                     else checkAuthTS reqId auth
@@ -93,7 +95,8 @@ hauthMiddleware client cache pool app rq respond = runStdoutLoggingT checkAuthHe
             runSqlPool
                 (selectList
                      ([AuthId' ==. authId', AuthTs ==. authTs] ||.
-                      [AuthId' ==. authId', AuthNonce ==. authNonce])
+                      [AuthId' ==. authId', AuthNonce ==. authNonce] ||.
+                      [AuthId' ==. authId', AuthMac ==. authMac])
                      [])
                 pool
         if (not . null) (results :: [Entity Auth])
