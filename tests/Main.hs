@@ -175,4 +175,4 @@ authHeaderToAuthSpec =
                          , (TsKey, TsVal 890)
                          , (NonceKey, NonceVal "487")
                          , (MacKey, MacVal "af0")] `shouldBe`
-                         Right (Auth ("lol") (890) ("487") Nothing ("af0"))
+                         Right (Auth (AuthID "lol") (AuthTS 890) (AuthNonce "487") Nothing (AuthMAC "af0"))

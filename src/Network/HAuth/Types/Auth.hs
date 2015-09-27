@@ -13,10 +13,9 @@
 
 module Network.HAuth.Types.Auth where
 
-import Data.ByteString (ByteString)
 import Data.Aeson.TH (deriveJSON, defaultOptions)
-import Database.Persist ()
-import Database.Persist.Sql ()
+import Data.ByteString (ByteString)
+import Data.Hashable (Hashable(..))
 import Database.Persist.TH
        (sqlSettings, share, persistLowerCase, mkPersist, mkMigrate)
 
@@ -40,8 +39,47 @@ type AuthAttribute = (AuthAttrKey, AuthAttrVal)
 
 type AuthHeader = [AuthAttribute]
 
+data AuthID = AuthID
+    { id' :: ByteString
+    } deriving (Eq,Ord,Show)
+
+instance Hashable AuthID where
+    hashWithSalt salt AuthID{..} = hashWithSalt salt id'
+    hash AuthID{..} = hash id'
+
+data AuthTS = AuthTS
+    { ts :: Integer
+    } deriving (Eq,Ord,Show)
+
+data AuthNonce = AuthNonce
+    { nonce :: ByteString
+    } deriving (Eq,Ord,Show)
+
+data AuthExt = AuthExt
+    { ext :: ByteString
+    } deriving (Eq,Ord,Show)
+
+data AuthMAC = AuthMAC
+    { mac :: ByteString
+    } deriving (Eq,Ord,Show)
+
+data Auth = Auth
+    { authID :: AuthID
+    , authTS :: AuthTS
+    , authNonce :: AuthNonce
+    , authExt :: Maybe AuthExt
+    , authMAC :: AuthMAC
+    } deriving (Eq,Ord,Show)
+
+data AuthInvalid = AuthInvalid
+    { message :: String
+    , requestId :: String
+    } deriving (Eq,Ord,Show)
+
+$( deriveJSON defaultOptions ''AuthInvalid )
+
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
-Auth
+AuthRegistry
     id' ByteString
     ts Int
     nonce ByteString
@@ -49,11 +87,3 @@ Auth
     mac ByteString
     deriving Eq Ord Show
 |]
-
-data AuthInvalid = AuthInvalid
-    { message :: String
-    , requestId :: String
-    }
-    deriving (Eq,Ord,Show)
-
-$( deriveJSON defaultOptions ''AuthInvalid )

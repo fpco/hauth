@@ -66,8 +66,8 @@ authHeaderToAuth hdr =
                     (Left "invalid authorization")
                     Right
                     (Auth <$>
-                     (idVal <$> Map.lookup IdKey hdrMap) <*>
-                     (fromInteger . tsVal <$> Map.lookup TsKey hdrMap) <*>
-                     (nonceVal <$> Map.lookup NonceKey hdrMap) <*>
-                     Just (extVal <$> Map.lookup ExtKey hdrMap) <*>
-                     (macVal <$> Map.lookup MacKey hdrMap))
+                     (AuthID . idVal <$> Map.lookup IdKey hdrMap) <*>
+                     (AuthTS . fromInteger . tsVal <$> Map.lookup TsKey hdrMap) <*>
+                     (AuthNonce . nonceVal <$> Map.lookup NonceKey hdrMap) <*>
+                     Just (AuthExt . extVal <$> Map.lookup ExtKey hdrMap) <*>
+                     (AuthMAC . macVal <$> Map.lookup MacKey hdrMap))

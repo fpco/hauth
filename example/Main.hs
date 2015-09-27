@@ -6,7 +6,7 @@ import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Logger (runNoLoggingT, runStderrLoggingT)
 import           Control.Monad.STM (atomically)
 import           Network.Consul (initializeConsulClient)
-import           Network.HAuth (migrateAll, hauthMiddleware)
+import           Network.HAuth
 import           Network.Wai.Application.Static
        (staticApp, defaultWebAppSettings)
 import           Network.Wai.Handler.Warp (run)
