@@ -25,8 +25,8 @@ library
                        Network.HAuth.Parse
                        Network.HAuth.Postgres
                        Network.HAuth.Types
+                       Network.HAuth.Types.Account
                        Network.HAuth.Types.Auth
-                       Network.HAuth.Types.Secret
   hs-source-dirs:      src
   build-depends:       aeson
                      , attoparsec
@@ -63,12 +63,12 @@ test-suite test-hauth
   main-is:             Main.hs
   type:                exitcode-stdio-1.0
   build-depends:       base >=4.7 && <5
-                     , bytestring
                      , hauth
                      , hspec
                      , hspec-attoparsec
                      , tasty
                      , tasty-hspec
+                     , text
 
 executable example-hauth
   if flag(example)
@@ -80,7 +80,6 @@ executable example-hauth
   main-is:             Main.hs
   build-depends:       async
                      , base >=4.7 && <5
-                     , bytestring
                      , consul-haskell
                      , hauth
                      , monad-control
@@ -90,6 +89,7 @@ executable example-hauth
                      , persistent-postgresql
                      , stm
                      , stm-containers
+                     , text
                      , transformers
                      , wai
                      , wai-app-static

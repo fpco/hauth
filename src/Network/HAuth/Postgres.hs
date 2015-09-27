@@ -29,13 +29,16 @@ import Network.HAuth.Types
 import Control.Monad.IO.Class (MonadIO)
 
 authToRegistry :: Auth -> AuthRegistry
-authToRegistry Auth{..} =
+authToRegistry (Auth (AuthID id') (AuthTS ts) (AuthNonce nonce) maybeExt (AuthMAC mac)) =
     AuthRegistry
-        (id' authID)
-        (fromIntegral (ts authTS))
-        (nonce authNonce)
-        (fmap ext authExt)
-        (mac authMAC)
+        id'
+        (fromIntegral ts)
+        nonce
+        (fmap
+             (\(AuthExt e) ->
+                   e)
+             maybeExt)
+        mac
 
 isDupeAuth
     :: (MonadBaseControl IO m, MonadIO m)

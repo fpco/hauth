@@ -10,31 +10,29 @@ import           Control.Applicative ((<$>), (<*>), (<|>), (<*), (*>), pure)
 import           Control.Applicative ((<|>))
 #endif
 
-import           Data.Attoparsec.ByteString
-       (takeWhile1, Parser, skipMany, skipMany1, option, many1,
-        string, skip, inClass)
-import           Data.Attoparsec.ByteString.Char8 (char, decimal, space)
-import           Data.ByteString (ByteString)
-import           Data.ByteString.Char8 ()
+import           Data.Attoparsec.Text
+       (char, decimal, space, takeWhile1, Parser, skipMany, skipMany1,
+        option, many1, string, skip, inClass)
+import           Data.Text (Text)
 import           Data.Map ()
 import qualified Data.Map as Map (lookup, fromList, size)
 import           Data.Set ()
 import qualified Data.Set as Set (fromList, size)
 import           Network.HAuth.Types
 
-plainTextP :: Parser ByteString
+plainTextP :: Parser Text
 plainTextP = takeWhile1 (inClass "a-zA-Z0-9+/=-")
 
 attrP
     :: forall a.
-       ByteString -> Parser a -> Parser a
+       Text -> Parser a -> Parser a
 attrP key valP =
     skipMany space *>
     string key *> char '=' *> quoteP *> valP <* quoteP
     <* skipMany space
   where
     quoteP = option () (skip isQuote)
-    isQuote = (==) 34
+    isQuote = (==) '"'
 
 idP :: Parser AuthAttribute
 idP = (,) <$> pure IdKey <*> (IdVal <$> (attrP "id" plainTextP))

@@ -26,11 +26,12 @@ import           Control.Applicative ((<$>), (<*))
 import           Control.Monad.IO.Class (MonadIO(liftIO))
 import           Control.Monad.Logger (runStdoutLoggingT, logInfo)
 import           Data.Aeson (encode)
-import           Data.Attoparsec.ByteString (parseOnly, endOfInput)
-import           Data.ByteString.Char8 (pack)
+import           Data.Attoparsec.Text (parseOnly, endOfInput)
 import           Data.Monoid ((<>))
 import           Data.Pool (Pool)
+import           Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import           Data.Time.Clock.POSIX (getPOSIXTime)
 import           Data.UUID (toString)
 import           Data.UUID.V4 (nextRandom)
@@ -46,7 +47,7 @@ import           Network.Wai (responseLBS, requestHeaders, Middleware)
 import           STMContainers.Map (Map)
 
 hauthMiddleware :: ConsulClient
-                -> Map AuthID Secret
+                -> Map (AuthID Text) Account
                 -> Pool SqlBackend
                 -> Middleware
 hauthMiddleware client cache pool app rq respond =
@@ -57,29 +58,31 @@ hauthMiddleware client cache pool app rq respond =
         case lookup hAuthorization (requestHeaders rq) of
             Nothing -> liftIO (respond (authHeaderInvalid "missing" reqId))
             Just bs ->
-                case parseOnly (authHeaderP <* endOfInput) bs of
-                    Left err -> liftIO (respond (authHeaderInvalid err reqId))
+                case parseOnly (authHeaderP <* endOfInput) (T.decodeUtf8 bs) of
+                    Left err ->
+                        liftIO (respond (authHeaderInvalid (T.pack err) reqId))
                     Right authHeader ->
                         case authHeaderToAuth authHeader of
                             Left err ->
-                                liftIO (respond (authHeaderInvalid err reqId))
+                                liftIO
+                                    (respond
+                                         (authHeaderInvalid (T.pack err) reqId))
                             Right auth -> do
-                                $logInfo ((T.pack . show) auth)
                                 checkAuthMAC reqId auth
     checkAuthMAC reqId auth@Auth{..} = do
-        secret <- getSecret client cache authID
-        case secret of
+        maybeAcct <- getAccount client cache authID
+        case maybeAcct of
             Nothing -> liftIO (respond (authHeaderInvalid "invalid id" reqId))
-            Just secret' -> do
+            Just Account{..} -> do
                 let computedMAC =
-                        hmacDigest authTS authNonce authExt rq secret'
+                        hmacDigest authTS authNonce authExt rq acctSecret
                 liftIO (print computedMAC)
                 if authMAC /= computedMAC
                     then liftIO
                              (respond (authHeaderInvalid "invalid mac" reqId))
                     else checkAuthTS reqId auth
-    checkAuthTS reqId auth@Auth{..} = do
-        timeSpread <- abs . (-) (ts authTS) . floor <$> liftIO getPOSIXTime
+    checkAuthTS reqId auth@Auth{authTS = AuthTS ts,..} = do
+        timeSpread <- abs . (-) ts . floor <$> liftIO getPOSIXTime
         if timeSpread > 120
             then liftIO (respond (authHeaderInvalid "invalid timestamp" reqId))
             else checkAuthStore reqId auth
@@ -97,8 +100,9 @@ hauthMiddleware client cache pool app rq respond =
     authHeaderInvalid message reqId =
         responseLBS
             status401
-            [("WWW-Authenticate", "MAC error=\"" <> pack message <> "\"")]
+            [ ( "WWW-Authenticate"
+              , "MAC error=\"" <> T.encodeUtf8 message <> "\"")]
             (encode
                  (AuthInvalid
                       ("invalid authorization header: " <> message)
-                      (toString reqId)))
+                      (T.pack (show reqId))))

@@ -6,7 +6,7 @@
 import           Control.Applicative ((<$>))
 #endif
 
-import qualified Data.ByteString.Char8 as B (ByteString)
+import           Data.Text (Text)
 import           Test.Hspec (shouldBe, it, describe)
 import           Test.Hspec.Attoparsec
        (Source((~>)), shouldParse, shouldFailOn)
@@ -65,17 +65,17 @@ idAttrParserSpec = do
     testSpec "HAuth Auth Header ID Attribute Parser" $
         do describe "id k/v parser" $
                do it "id key should be lower case" $
-                      do idP `shouldFailOn` ("ID=abc" :: B.ByteString)
-                         idP `shouldFailOn` ("Id=abc" :: B.ByteString)
+                      do idP `shouldFailOn` ("ID=abc" :: Text)
+                         idP `shouldFailOn` ("Id=abc" :: Text)
                   it "id value is required" $
-                      do idP `shouldFailOn` ("id" :: B.ByteString)
-                         idP `shouldFailOn` ("id=" :: B.ByteString)
+                      do idP `shouldFailOn` ("id" :: Text)
+                         idP `shouldFailOn` ("id=" :: Text)
                   it "id value should be plain-string" $
-                      do ("id=abc" :: B.ByteString) ~> idP `shouldParse`
+                      do ("id=abc" :: Text) ~> idP `shouldParse`
                              (IdKey, IdVal "abc")
-                         ("id=123" :: B.ByteString) ~> idP `shouldParse`
+                         ("id=123" :: Text) ~> idP `shouldParse`
                              (IdKey, IdVal "123")
-                         ("id=abc123" :: B.ByteString) ~> idP `shouldParse`
+                         ("id=abc123" :: Text) ~> idP `shouldParse`
                              (IdKey, IdVal "abc123")
 
 tsAttrParserSpec :: IO TestTree
@@ -83,13 +83,13 @@ tsAttrParserSpec = do
     testSpec "HAuth Auth Header TsAttr Parser" $
         do describe "ts k/v parser" $
                do it "ts key should be lower case" $
-                      do tsP `shouldFailOn` ("TS=abc" :: B.ByteString)
-                         tsP `shouldFailOn` ("Ts=abc" :: B.ByteString)
+                      do tsP `shouldFailOn` ("TS=abc" :: Text)
+                         tsP `shouldFailOn` ("Ts=abc" :: Text)
                   it "ts value is required" $
-                      do tsP `shouldFailOn` ("ts" :: B.ByteString)
-                         tsP `shouldFailOn` ("ts=" :: B.ByteString)
+                      do tsP `shouldFailOn` ("ts" :: Text)
+                         tsP `shouldFailOn` ("ts=" :: Text)
                   it "ts value should be an integer" $
-                      do ("ts=123" :: B.ByteString) ~> tsP `shouldParse`
+                      do ("ts=123" :: Text) ~> tsP `shouldParse`
                              (TsKey, TsVal 123)
 -- TODO: update the parser to fail on zero-padded ts values
                -- it "should fail to parse numbers with leading zeros" $
@@ -100,17 +100,17 @@ nonceAttrParserSpec = do
     testSpec "HAuth Auth Header NonceAttr Parser" $
         do describe "nonce k/v parser" $
                do it "nonce value should be plain-string" $
-                      do ("nonce=xyz123" :: B.ByteString) ~> nonceP `shouldParse`
+                      do ("nonce=xyz123" :: Text) ~> nonceP `shouldParse`
                              (NonceKey, NonceVal "xyz123")
                   it "nonce value is required" $
-                      do nonceP `shouldFailOn` ("nonce" :: B.ByteString)
-                         nonceP `shouldFailOn` ("nonce=" :: B.ByteString)
+                      do nonceP `shouldFailOn` ("nonce" :: Text)
+                         nonceP `shouldFailOn` ("nonce=" :: Text)
                   it "nonce value should be plain-string" $
-                      do ("nonce=abc" :: B.ByteString) ~> nonceP `shouldParse`
+                      do ("nonce=abc" :: Text) ~> nonceP `shouldParse`
                              (NonceKey, NonceVal "abc")
-                         ("nonce=123" :: B.ByteString) ~> nonceP `shouldParse`
+                         ("nonce=123" :: Text) ~> nonceP `shouldParse`
                              (NonceKey, NonceVal "123")
-                         ("nonce=abc123" :: B.ByteString) ~> nonceP `shouldParse`
+                         ("nonce=abc123" :: Text) ~> nonceP `shouldParse`
                              (NonceKey, NonceVal "abc123")
 
 extAttrParserSpec :: IO TestTree
@@ -118,14 +118,14 @@ extAttrParserSpec = do
     testSpec "HAuth Auth Header ExtAttr Parser" $
         do describe "ext k/v parser" $
                do it "ext value is required (if key is present)" $
-                      do extP `shouldFailOn` ("ext" :: B.ByteString)
-                         extP `shouldFailOn` ("ext=" :: B.ByteString)
+                      do extP `shouldFailOn` ("ext" :: Text)
+                         extP `shouldFailOn` ("ext=" :: Text)
                   it "ext value should be plain-string" $
-                      do ("ext=abc" :: B.ByteString) ~> extP `shouldParse`
+                      do ("ext=abc" :: Text) ~> extP `shouldParse`
                              (ExtKey, ExtVal "abc")
-                         ("ext=123" :: B.ByteString) ~> extP `shouldParse`
+                         ("ext=123" :: Text) ~> extP `shouldParse`
                              (ExtKey, ExtVal "123")
-                         ("ext=abc123" :: B.ByteString) ~> extP `shouldParse`
+                         ("ext=abc123" :: Text) ~> extP `shouldParse`
                              (ExtKey, ExtVal "abc123")
 
 macAttrParserSpec :: IO TestTree
@@ -133,14 +133,14 @@ macAttrParserSpec = do
     testSpec "HAuth Auth Header MacAttr Parser" $
         do describe "mac k/v parser" $
                do it "mac value is required" $
-                      do macP `shouldFailOn` ("mac" :: B.ByteString)
-                         macP `shouldFailOn` ("mac=" :: B.ByteString)
+                      do macP `shouldFailOn` ("mac" :: Text)
+                         macP `shouldFailOn` ("mac=" :: Text)
                   it "mac value should be plain-string" $
-                      do ("mac=abc" :: B.ByteString) ~> macP `shouldParse`
+                      do ("mac=abc" :: Text) ~> macP `shouldParse`
                              (MacKey, MacVal "abc")
-                         ("mac=123" :: B.ByteString) ~> macP `shouldParse`
+                         ("mac=123" :: Text) ~> macP `shouldParse`
                              (MacKey, MacVal "123")
-                         ("mac=abc123" :: B.ByteString) ~> macP `shouldParse`
+                         ("mac=abc123" :: Text) ~> macP `shouldParse`
                              (MacKey, MacVal "abc123")
 
 authHeaderParserSpec :: IO TestTree
@@ -148,13 +148,13 @@ authHeaderParserSpec =
     testSpec "HAuth Auth Header Parser" $
     do describe "auth header parser" $
            do it "auth header should parse id,ts,nonce,ext & mac attributes" $
-                  do ("MAC id=lol ts=890 nonce=487 mac=af0" :: B.ByteString) ~>
+                  do ("MAC id=lol ts=890 nonce=487 mac=af0" :: Text) ~>
                          authHeaderP `shouldParse`
                          [ (IdKey, IdVal "lol")
                          , (TsKey, TsVal 890)
                          , (NonceKey, NonceVal "487")
                          , (MacKey, MacVal "af0")]
-                     ("MAC id=lol ts=890 nonce=487 ext=yay mac=af0" :: B.ByteString) ~>
+                     ("MAC id=lol ts=890 nonce=487 ext=yay mac=af0" :: Text) ~>
                          authHeaderP `shouldParse`
                          [ (IdKey, IdVal "lol")
                          , (TsKey, TsVal 890)
@@ -163,7 +163,7 @@ authHeaderParserSpec =
                          , (MacKey, MacVal "af0")]
               it "auth header should fail if anything unknown is present" $
                   do authHeaderP `shouldFailOn`
-                         ("MAC lol=true id=heh ts=837 nonce=298 mac=eff" :: B.ByteString)
+                         ("MAC lol=true id=heh ts=837 nonce=298 mac=eff" :: Text)
 
 authHeaderToAuthSpec :: IO TestTree
 authHeaderToAuthSpec =

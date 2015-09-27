@@ -22,35 +22,42 @@ import           Control.Concurrent.Lifted (fork, threadDelay)
 import           Control.Exception.Enclosed (catchAny)
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (MonadIO(liftIO))
-import           Control.Monad.Logger (MonadLogger, logInfo)
-import           Control.Monad.Trans.Control (MonadBaseControl(..))
+import           Control.Monad.Logger (MonadLogger, logDebug, logWarn)
 import           Control.Monad.STM (atomically)
+import           Control.Monad.Trans.Control (MonadBaseControl(..))
+import           Data.Aeson (decode)
+import           Data.ByteString.Lazy (fromStrict)
 import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
 import           Data.Void (vacuous)
 import           Network.Consul (ConsulClient(..), KeyValue(..), getKey)
 import           Network.HAuth.Types
 import           STMContainers.Map (Map)
 import qualified STMContainers.Map as Map
 
-getSecret
+getAccount
     :: (MonadBaseControl IO m, MonadIO m, MonadLogger m)
-    => ConsulClient -> Map AuthID Secret -> AuthID -> m (Maybe Secret)
-getSecret client cache authId = do
-    maybeCachedKeyValue <- (liftIO . atomically) (Map.lookup authId cache)
-    case maybeCachedKeyValue of
+    => ConsulClient
+    -> Map (AuthID Text) Account
+    -> AuthID Text
+    -> m (Maybe Account)
+getAccount client cache authId@(AuthID id') = do
+    maybeAccount <- (liftIO . atomically) (Map.lookup authId cache)
+    case maybeAccount of
         s@(Just _) -> pure s
         Nothing -> do
-            let key = T.decodeUtf8 (id' authId)
-            maybeConsulKeyVal <- getKey client key Nothing Nothing Nothing
+            maybeConsulKeyVal <- getKey client id' Nothing Nothing Nothing
             case maybeConsulKeyVal of
-                Just consulKeyVal -> do
-                    let secret = Secret (kvValue consulKeyVal)
-                    (liftIO . atomically) (Map.insert secret authId cache)
-                    (void . fork . vacuous)
-                        (watch key (kvModifyIndex consulKeyVal) second)
-                    (pure . Just) secret
+                Just consulKeyVal ->
+                    case decode (fromStrict (kvValue consulKeyVal)) :: Maybe Account of
+                        Just acct -> do
+                            (liftIO . atomically)
+                                (Map.insert acct authId cache)
+                            (void . fork . vacuous)
+                                (watch id' (kvModifyIndex consulKeyVal) second)
+                            (pure . Just) acct
+                        Nothing -> pure Nothing
                 Nothing -> pure Nothing
   where
     second = 1000 * 1000
@@ -61,19 +68,21 @@ getSecret client cache authId = do
     watch key idx backoff = do
         catchAny
             (do maybeKeyVal <- getKey client key (Just idx) Nothing Nothing
-                $logInfo
+                $logDebug
                     ("Background for " <> key <> " : " <>
                      (T.pack . show) maybeKeyVal)
                 case maybeKeyVal of
                     (Just keyValue) -> do
-                        (liftIO . atomically)
-                            (Map.insert
-                                 (Secret (kvValue keyValue))
-                                 authId
-                                 cache)
-                        watchAgain key (kvModifyIndex keyValue) backoff
+                        case decode (fromStrict (kvValue keyValue)) :: Maybe Account of
+                            Just acct -> do
+                                (liftIO . atomically)
+                                    (Map.insert acct authId cache)
+                                watchAgain key (kvModifyIndex keyValue) second
+                            Nothing -> watchAgain key idx (backoff * 2)
                     Nothing -> watchAgain key idx (backoff * 2))
-            (const (watchAgain key idx (backoff * 2)))
+            (\ex ->
+                  do $logWarn (T.pack (show ex))
+                     watchAgain key idx (backoff * 2))
     watchAgain key idx backoff = do
         threadDelay backoff
         watch key idx backoff
