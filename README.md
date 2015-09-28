@@ -1,20 +1,8 @@
-<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#orgheadline1">1. Build (with example main)</a></li>
-<li><a href="#orgheadline2">2. External Requirements</a></li>
-<li><a href="#orgheadline3">3. Run</a></li>
-</ul>
-</div>
-</div>
-
-
-# Build (with example main)<a id="orgheadline1"></a>
+# Build (with example main)
 
     stack install . --flag hauth:example
 
-# External Requirements<a id="orgheadline2"></a>
+# External Requirements
 
 -   Consul
     
@@ -36,7 +24,7 @@
     
     Persisent migrates the schema for you, of course.
 
-# Run<a id="orgheadline3"></a>
+# Run
 
 -   Run the example webserver in the same directory as the project.
     
