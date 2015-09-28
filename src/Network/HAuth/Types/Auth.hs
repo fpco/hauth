@@ -14,10 +14,12 @@
 
 module Network.HAuth.Types.Auth where
 
+import Data.Aeson (ToJSON(..), Value(..))
 import Data.Aeson.TH
-       (deriveJSON, defaultOptions, fieldLabelModifier)
+       (deriveToJSON, defaultOptions, fieldLabelModifier)
 import Data.Hashable (Hashable(..))
 import Data.Text (Text)
+import Data.UUID (UUID, toText)
 import Database.Persist.TH
        (sqlSettings, share, persistLowerCase, mkPersist, mkMigrate)
 
@@ -73,27 +75,42 @@ data Auth = Auth
     , authMAC :: AuthMAC Text
     } deriving (Eq,Show)
 
-data AuthInvalid = AuthInvalid
-    { authInvalidRequest :: Text
-    , authInvalidMessage :: Text
+data AuthSuccess = AuthSuccess
+    { authSuccessRequestId :: UUID
+    , authSuccessAuth :: Auth
     } deriving (Eq,Show)
 
-$(deriveJSON defaultOptions ''AuthID)
-$(deriveJSON defaultOptions ''AuthTS)
-$(deriveJSON defaultOptions ''AuthNonce)
-$(deriveJSON defaultOptions ''AuthExt)
-$(deriveJSON defaultOptions ''AuthMAC)
-$(deriveJSON
+data AuthFailure = AuthFailure
+    { authFailureRequestId :: UUID
+    , authFailureMessage :: Text
+    } deriving (Eq,Show)
+
+instance ToJSON UUID where
+  toJSON = String . toText
+
+$(deriveToJSON defaultOptions ''AuthID)
+$(deriveToJSON defaultOptions ''AuthTS)
+$(deriveToJSON defaultOptions ''AuthNonce)
+$(deriveToJSON defaultOptions ''AuthExt)
+$(deriveToJSON defaultOptions ''AuthMAC)
+
+$(deriveToJSON
       (defaultOptions
        { fieldLabelModifier = drop 4
        })
       ''Auth)
 
-$(deriveJSON
+$(deriveToJSON
       (defaultOptions
        { fieldLabelModifier = drop 11
        })
-      ''AuthInvalid)
+      ''AuthSuccess)
+
+$(deriveToJSON
+      (defaultOptions
+       { fieldLabelModifier = drop 11
+       })
+      ''AuthFailure)
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 AuthRegistry
