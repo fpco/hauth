@@ -14,6 +14,16 @@
 
 module Network.HAuth.Postgres where
 
+{-|
+Module      : Network.HAuth.Postgres
+Description : Functions for querying/recording Auth attempts.
+Copyright   : (c) FPComplete, 2015
+License     : MIT
+Maintainer  : Tim Dysinger <tim@fpcomplete.com>
+Stability   : experimental
+Portability : POSIX
+-}
+
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative ((<$>))
 #endif
@@ -28,6 +38,7 @@ import Data.Pool (Pool)
 import Network.HAuth.Types
 import Control.Monad.IO.Class (MonadIO)
 
+-- | Convert an Auth type to a database ready AuthRegistry type.
 authToRegistry :: Auth -> AuthRegistry
 authToRegistry (Auth (AuthID id') (AuthTS ts) (AuthNonce nonce) maybeExt (AuthMAC mac)) =
     AuthRegistry
@@ -40,6 +51,8 @@ authToRegistry (Auth (AuthID id') (AuthTS ts) (AuthNonce nonce) maybeExt (AuthMA
              maybeExt)
         mac
 
+-- | Query the database to determine if we have seen this
+-- authentication attempt before.
 isDupeAuth
     :: (MonadBaseControl IO m, MonadIO m)
     => Pool SqlBackend -> Auth -> m Bool
@@ -59,6 +72,8 @@ isDupeAuth pool = isDupe . authToRegistry
                  [])
             pool
 
+-- | Store the authentication attempt so we can match it with future
+-- authentication requests.
 storeAuth
     :: (MonadBaseControl IO m, MonadIO m)
     => Pool SqlBackend -> Auth -> m ()

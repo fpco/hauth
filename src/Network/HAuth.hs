@@ -15,6 +15,16 @@
 module Network.HAuth (module Network.HAuth.Types, hauthMiddleware)
        where
 
+{-|
+Module      : Network.HAuth
+Description : Middleware for HMAC SHA256 Authentication
+Copyright   : (c) FPComplete, 2015
+License     : MIT
+Maintainer  : Tim Dysinger <tim@fpcomplete.com>
+Stability   : experimental
+Portability : POSIX
+-}
+
 #if __GLASGOW_HASKELL__ < 710
 import           Control.Applicative ((<$>), (<*))
 #endif
@@ -44,6 +54,11 @@ import           Network.HTTP.Types
 import           Network.Wai (responseLBS, requestHeaders, Middleware)
 import           STMContainers.Map (Map)
 
+-- | WAI middleware to authenicate requests according to the spec laid out in
+-- https://confluence.amgencss.fpcomplete.com/display/HMST/Authentication+system+requirements
+-- Takes a ConsulClient for accessing Consul, STMContainers.Map.Map
+-- used as a cache and a pool of Postgres database connections used
+-- for queries.
 hauthMiddleware :: ConsulClient
                 -> Map (AuthID Text) Account
                 -> Pool SqlBackend

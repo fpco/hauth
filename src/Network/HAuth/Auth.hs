@@ -4,6 +4,16 @@
 
 module Network.HAuth.Auth where
 
+{-|
+Module      : Network.HAuth.Auth
+Description : Functions for validating Auth
+Copyright   : (c) FPComplete, 2015
+License     : MIT
+Maintainer  : Tim Dysinger <tim@fpcomplete.com>
+Stability   : experimental
+Portability : POSIX
+-}
+
 import           Crypto.Hash (SHA256(..))
 import           Crypto.MAC (HMAC(..), hmac)
 import           Data.ByteString (intercalate)
@@ -17,6 +27,8 @@ import           Network.HTTP.Types ()
 import           Network.Wai
        (Request(rawPathInfo, requestHeaders, requestMethod))
 
+-- | Produce a HMAC SHA256 digest of the given parameters.  Used to
+-- validate the 'mac' value given in the authentication header.
 hmacDigest
     :: AuthTS Integer
     -> AuthNonce Text

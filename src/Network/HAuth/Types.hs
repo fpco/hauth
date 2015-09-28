@@ -3,5 +3,15 @@ module Network.HAuth.Types
         module Network.HAuth.Types.Auth)
        where
 
+{-|
+Module      : Network.HAuth.Types
+Description : Types for HAuth (Account & Authentications)
+Copyright   : (c) FPComplete, 2015
+License     : MIT
+Maintainer  : Tim Dysinger <tim@fpcomplete.com>
+Stability   : experimental
+Portability : POSIX
+-}
+
 import Network.HAuth.Types.Account
 import Network.HAuth.Types.Auth

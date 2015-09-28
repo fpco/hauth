@@ -14,6 +14,16 @@
 
 module Network.HAuth.Consul where
 
+{-|
+Module      : Network.HAuth.Consul
+Description : Functions for querying/watching Consul data
+Copyright   : (c) FPComplete, 2015
+License     : MIT
+Maintainer  : Tim Dysinger <tim@fpcomplete.com>
+Stability   : experimental
+Portability : POSIX
+-}
+
 #if __GLASGOW_HASKELL__ < 710
 import           Control.Applicative (pure)
 #endif
@@ -36,6 +46,9 @@ import           Network.HAuth.Types
 import           STMContainers.Map (Map)
 import qualified STMContainers.Map as Map
 
+-- | Retrieve an account from the STM Map cache or directly from Consul.
+-- Background threads watch Consul for data changes on accounts we've
+-- previously looked up.
 getAccount
     :: (MonadBaseControl IO m, MonadIO m, MonadLogger m)
     => ConsulClient

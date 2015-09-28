@@ -4,6 +4,16 @@
 
 module Network.HAuth.Parse where
 
+{-|
+Module      : Network.HAuth.Parse
+Description : Functions for parsing an Authentication header
+Copyright   : (c) FPComplete, 2015
+License     : MIT
+Maintainer  : Tim Dysinger <tim@fpcomplete.com>
+Stability   : experimental
+Portability : POSIX
+-}
+
 #if __GLASGOW_HASKELL__ < 710
 import           Control.Applicative ((<$>), (<*>), (<|>), (<*), (*>), pure)
 #else
@@ -20,9 +30,11 @@ import           Data.Set ()
 import qualified Data.Set as Set (fromList, size)
 import           Network.HAuth.Types
 
+-- | A parser for plain-string ABNF (without spaces)
 plainTextP :: Parser Text
-plainTextP = takeWhile1 (inClass "a-zA-Z0-9+/=-")
+plainTextP = takeWhile1 (inClass "!#-[]-}")
 
+-- | Abstraction of an authentication header attribute parser
 attrP
     :: forall a.
        Text -> Parser a -> Parser a
@@ -34,26 +46,34 @@ attrP key valP =
     quoteP = option () (skip isQuote)
     isQuote = (==) '"'
 
+-- | Authentication header attribute parser for 'id'
 idP :: Parser AuthAttribute
 idP = (,) <$> pure IdKey <*> (IdVal <$> (attrP "id" plainTextP))
 
+-- | Authentication header attribute parser for 'ts'
 tsP :: Parser AuthAttribute
 tsP = (,) <$> pure TsKey <*> (TsVal <$> (attrP "ts" decimal))
 
+-- | Authentication header attribute parser for 'nonce'
 nonceP :: Parser AuthAttribute
 nonceP = (,) <$> pure NonceKey <*> (NonceVal <$> (attrP "nonce" plainTextP))
 
+-- | Authentication header attribute parser for 'ext'
 extP :: Parser AuthAttribute
 extP = (,) <$> pure ExtKey <*> (ExtVal <$> (attrP "ext" plainTextP))
 
+-- | Authentication header attribute parser for 'mac'
 macP :: Parser AuthAttribute
 macP = (,) <$> pure MacKey <*> (MacVal <$> (attrP "mac" plainTextP))
 
+-- | Authentication header parser
 authHeaderP :: Parser AuthHeader
 authHeaderP =
     skipMany space *> string "MAC" *> skipMany1 space *>
     many1 (idP <|> tsP <|> nonceP <|> extP <|> macP)
 
+-- | Validate & convert a loose array of header attributes into the
+-- Auth datatype.
 authHeaderToAuth :: AuthHeader -> Either String Auth
 authHeaderToAuth hdr =
     let keySet = Set.fromList (map fst hdr)
