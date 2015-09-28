@@ -5,8 +5,9 @@
 module Network.HAuth.Types.Account where
 
 import Data.Aeson.TH
-       (deriveJSON, defaultOptions, fieldLabelModifier)
+       (deriveFromJSON, defaultOptions, fieldLabelModifier)
 import Data.Text (Text)
+import Network.HAuth.Types.JSON
 
 data AcctName a =
     AcctName a
@@ -21,10 +22,10 @@ data Account = Account
     , acctSecret :: AcctSecret Text
     } deriving (Eq,Show)
 
-$(deriveJSON defaultOptions ''AcctName)
-$(deriveJSON defaultOptions ''AcctSecret)
-$(deriveJSON
+$(deriveFromJSON defaultOptions ''AcctName)
+$(deriveFromJSON defaultOptions ''AcctSecret)
+$(deriveFromJSON
       (defaultOptions
-       { fieldLabelModifier = drop 4
+       { fieldLabelModifier = camelToKabob . drop 4
        })
       ''Account)

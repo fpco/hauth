@@ -22,6 +22,7 @@ import Data.Text (Text)
 import Data.UUID (UUID, toText)
 import Database.Persist.TH
        (sqlSettings, share, persistLowerCase, mkPersist, mkMigrate)
+import Network.HAuth.Types.JSON
 
 data AuthAttrKey
     = IdKey
@@ -96,19 +97,19 @@ $(deriveToJSON defaultOptions ''AuthMAC)
 
 $(deriveToJSON
       (defaultOptions
-       { fieldLabelModifier = drop 4
+       { fieldLabelModifier = camelToKabob . drop 4
        })
       ''Auth)
 
 $(deriveToJSON
       (defaultOptions
-       { fieldLabelModifier = drop 11
+       { fieldLabelModifier = camelToKabob . drop 11
        })
       ''AuthSuccess)
 
 $(deriveToJSON
       (defaultOptions
-       { fieldLabelModifier = drop 11
+       { fieldLabelModifier = camelToKabob . drop 11
        })
       ''AuthFailure)
 

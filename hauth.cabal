@@ -27,6 +27,7 @@ library
                        Network.HAuth.Types
                        Network.HAuth.Types.Account
                        Network.HAuth.Types.Auth
+                       Network.HAuth.Types.JSON
   hs-source-dirs:      src
   build-depends:       aeson
                      , attoparsec
