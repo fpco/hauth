@@ -83,7 +83,6 @@ hauthMiddleware client cache pool app rq respond =
             Just Account{..} -> do
                 let computedMAC =
                         hmacDigest authTS authNonce authExt rq acctSecret
-                liftIO (print computedMAC)
                 if authMAC /= computedMAC
                     then authFailure status403 reqId "invalid mac"
                     else checkAuthTS reqId auth
