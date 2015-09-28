@@ -29,13 +29,13 @@
 -   Run the example webserver in the same directory as the project.
     
         ~/.local/bin/example-hauth
+
+-   Then make your requests for a static file in the same directory
+    as the project.
     
-    -   Then make your requests for a static file in the same directory
-        as the project.
-        
-            curl -H "Authorization: MAC \
-            id=123 \
-            ts=1443482988 \
-            nonce=763d5941-662e-11e5-9e67-0235b842756b \
-            mac=53bb57e3d8e1306b5725de2e72382f1c1b0ae91dfa136958607fa5ab27bc889b \
-            " http://localhost:4321/hauth.cabal
+        curl -H "Authorization: MAC \
+        id=123 \
+        ts=1443482988 \
+        nonce=763d5941-662e-11e5-9e67-0235b842756b \
+        mac=53bb57e3d8e1306b5725de2e72382f1c1b0ae91dfa136958607fa5ab27bc889b \
+        " http://localhost:4321/hauth.cabal
