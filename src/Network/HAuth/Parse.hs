@@ -48,23 +48,23 @@ attrP key valP =
 
 -- | Authentication header attribute parser for 'id'
 idP :: Parser AuthAttribute
-idP = (,) <$> pure IdKey <*> (IdVal <$> (attrP "id" plainTextP))
+idP = (,) <$> pure IdKey <*> (IdVal <$> attrP "id" plainTextP)
 
 -- | Authentication header attribute parser for 'ts'
 tsP :: Parser AuthAttribute
-tsP = (,) <$> pure TsKey <*> (TsVal <$> (attrP "ts" decimal))
+tsP = (,) <$> pure TsKey <*> (TsVal <$> attrP "ts" decimal)
 
 -- | Authentication header attribute parser for 'nonce'
 nonceP :: Parser AuthAttribute
-nonceP = (,) <$> pure NonceKey <*> (NonceVal <$> (attrP "nonce" plainTextP))
+nonceP = (,) <$> pure NonceKey <*> (NonceVal <$> attrP "nonce" plainTextP)
 
 -- | Authentication header attribute parser for 'ext'
 extP :: Parser AuthAttribute
-extP = (,) <$> pure ExtKey <*> (ExtVal <$> (attrP "ext" plainTextP))
+extP = (,) <$> pure ExtKey <*> (ExtVal <$> attrP "ext" plainTextP)
 
 -- | Authentication header attribute parser for 'mac'
 macP :: Parser AuthAttribute
-macP = (,) <$> pure MacKey <*> (MacVal <$> (attrP "mac" plainTextP))
+macP = (,) <$> pure MacKey <*> (MacVal <$> attrP "mac" plainTextP)
 
 -- | Authentication header parser
 authHeaderP :: Parser AuthHeader

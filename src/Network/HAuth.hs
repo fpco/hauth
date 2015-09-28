@@ -1,7 +1,5 @@
 {-# LANGUAGE CPP                        #-}
-{-# LANGUAGE EmptyDataDecls             #-}
 {-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
@@ -75,9 +73,9 @@ hauthMiddleware client cache pool app rq respond =
                     Left err -> authFailure status401 reqId (T.pack err)
                     Right authHeader ->
                         case authHeaderToAuth authHeader of
-                            Left err -> authFailure status400 reqId (T.pack err)
-                            Right auth -> do
-                                checkAuthMAC reqId auth
+                            Left err ->
+                                authFailure status400 reqId (T.pack err)
+                            Right auth -> checkAuthMAC reqId auth
     checkAuthMAC reqId auth@Auth{..} = do
         maybeAcct <- getAccount client cache authID
         case maybeAcct of

@@ -78,14 +78,14 @@ getAccount client cache authId@(AuthID id') = do
       | backoff < second = watch key idx second
     watch key idx backoff
       | backoff > (30 * second) = watch key idx (30 * second)
-    watch key idx backoff = do
+    watch key idx backoff =
         catchAny
             (do maybeKeyVal <- getKey client key (Just idx) Nothing Nothing
                 $logDebug
                     ("Background for " <> key <> " : " <>
                      (T.pack . show) maybeKeyVal)
                 case maybeKeyVal of
-                    (Just keyValue) -> do
+                    (Just keyValue) ->
                         case decode (fromStrict (kvValue keyValue)) :: Maybe Account of
                             Just acct -> do
                                 (liftIO . atomically)
