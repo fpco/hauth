@@ -11,8 +11,6 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 
-module Network.HAuth.Types.Auth where
-
 {-|
 Module      : Network.HAuth.Types.Auth
 Description : Types for Authentication
@@ -22,6 +20,8 @@ Maintainer  : Tim Dysinger <tim@fpcomplete.com>
 Stability   : experimental
 Portability : POSIX
 -}
+
+module Network.HAuth.Types.Auth where
 
 import Data.Aeson (ToJSON(..), Value(..))
 import Data.Aeson.TH

@@ -1,7 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Network.HAuth.Auth where
-
 {-|
 Module      : Network.HAuth.Auth
 Description : Functions for validating Auth
@@ -11,6 +9,8 @@ Maintainer  : Tim Dysinger <tim@fpcomplete.com>
 Stability   : experimental
 Portability : POSIX
 -}
+
+module Network.HAuth.Auth where
 
 import           Crypto.Hash (SHA256(..))
 import           Crypto.MAC (HMAC(..), hmac)

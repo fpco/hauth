@@ -4,8 +4,6 @@
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE RecordWildCards   #-}
 
-module Network.HAuth.Postgres where
-
 {-|
 Module      : Network.HAuth.Postgres
 Description : Functions for querying/recording Auth attempts.
@@ -15,6 +13,8 @@ Maintainer  : Tim Dysinger <tim@fpcomplete.com>
 Stability   : experimental
 Portability : POSIX
 -}
+
+module Network.HAuth.Postgres where
 
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative ((<$>))

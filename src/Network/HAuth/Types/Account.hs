@@ -2,8 +2,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
-module Network.HAuth.Types.Account where
-
 {-|
 Module      : Network.HAuth.Types.Account
 Description : Types for an Account
@@ -13,6 +11,8 @@ Maintainer  : Tim Dysinger <tim@fpcomplete.com>
 Stability   : experimental
 Portability : POSIX
 -}
+
+module Network.HAuth.Types.Account where
 
 import Data.Aeson.TH
        (deriveFromJSON, defaultOptions, fieldLabelModifier)

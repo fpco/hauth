@@ -1,5 +1,3 @@
-module Network.HAuth.Types.JSON (camelToKabob, camelToSnake) where
-
 {-|
 Module      : Network.HAuth.Types.JSON
 Description : Functions to use with Data.Aeson.TH derive options
@@ -9,6 +7,8 @@ Maintainer  : Tim Dysinger <tim@fpcomplete.com>
 Stability   : experimental
 Portability : POSIX
 -}
+
+module Network.HAuth.Types.JSON (camelToKabob, camelToSnake) where
 
 import Data.Char
 

@@ -5,8 +5,6 @@
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
-module Network.HAuth.Consul where
-
 {-|
 Module      : Network.HAuth.Consul
 Description : Functions for querying/watching Consul data
@@ -16,6 +14,8 @@ Maintainer  : Tim Dysinger <tim@fpcomplete.com>
 Stability   : experimental
 Portability : POSIX
 -}
+
+module Network.HAuth.Consul where
 
 #if __GLASGOW_HASKELL__ < 710
 import           Control.Applicative (pure)

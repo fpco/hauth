@@ -3,9 +3,6 @@
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
-module Network.HAuth (module Network.HAuth.Types, hauthMiddleware)
-       where
-
 {-|
 Module      : Network.HAuth
 Description : Middleware for HMAC SHA256 Authentication
@@ -15,6 +12,9 @@ Maintainer  : Tim Dysinger <tim@fpcomplete.com>
 Stability   : experimental
 Portability : POSIX
 -}
+
+module Network.HAuth (module Network.HAuth.Types, hauthMiddleware)
+       where
 
 #if __GLASGOW_HASKELL__ < 710
 import           Control.Applicative ((<$>), (<*))

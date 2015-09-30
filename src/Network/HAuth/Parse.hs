@@ -2,8 +2,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
 
-module Network.HAuth.Parse where
-
 {-|
 Module      : Network.HAuth.Parse
 Description : Functions for parsing an Authentication header
@@ -13,6 +11,8 @@ Maintainer  : Tim Dysinger <tim@fpcomplete.com>
 Stability   : experimental
 Portability : POSIX
 -}
+
+module Network.HAuth.Parse where
 
 #if __GLASGOW_HASKELL__ < 710
 import           Control.Applicative ((<$>), (<*>), (<|>), (<*), (*>), pure)
