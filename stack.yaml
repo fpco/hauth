@@ -2,3 +2,6 @@ resolver: lts-2.22
 extra-deps: [ tasty-hspec-1.1.2 ]
 packages:
   - "."
+image:
+  container:
+    base: "hauth-base"
