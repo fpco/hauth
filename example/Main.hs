@@ -5,29 +5,43 @@
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Logger (runNoLoggingT, runStderrLoggingT)
 import           Control.Monad.STM (atomically)
-import           Network.Consul (initializeConsulClient)
-import           Network.HAuth
-import           Network.Wai.Application.Static
-       (staticApp, defaultWebAppSettings)
-import           Network.Wai.Handler.Warp (run)
-import           Network.Wai.Middleware.RequestLogger (logStdoutDev)
-import           Network.Socket (PortNumber(..))
+import qualified Data.ByteString.Char8 as BC
+import           Data.Monoid ((<>))
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import           Database.Persist ()
 import           Database.Persist.Postgresql (withPostgresqlPool)
 import           Database.Persist.Sql (runMigration, runSqlPool)
+import           Network.BSD (getHostName)
+import           Network.Consul (initializeConsulClient)
+import           Network.HAuth
+import           Network.HTTP.Types (status200)
+import           Network.Socket (PortNumber(..))
+import           Network.Wai (responseLBS)
+import           Network.Wai.Handler.Warp (run)
+import           Network.Wai.Middleware.RequestLogger (logStdoutDev)
 import qualified STMContainers.Map as Map
+import           System.Environment (getEnv)
 
 main :: IO ()
 main = do
-    client <- initializeConsulClient "localhost" (PortNum 8500) Nothing
+    hostname <- getHostName
+    client <- initializeConsulClient (T.pack hostname) (PortNum 8500) Nothing
     cache <- atomically Map.new
     runStderrLoggingT
         (withPostgresqlPool
-             "host=localhost dbname=hauth user=hauth password=hauth port=5432"
+             ("host=" <> (BC.pack hostname) <>
+              " dbname=hauth user=hauth password=hauth port=5432")
              10
              (\pool ->
                    do runNoLoggingT (runSqlPool (runMigration migrateAll) pool)
                       let middleware =
                               logStdoutDev . hauthMiddleware client cache pool
-                          webApp = staticApp (defaultWebAppSettings ".")
+                          webApp rq respond =
+                              liftIO
+                                  (respond
+                                       (responseLBS
+                                            status200
+                                            [("Content-Type", "text/plain")]
+                                            "Win!"))
                       liftIO (run 4321 (middleware webApp))))
