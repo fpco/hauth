@@ -42,8 +42,14 @@ executable hauth-client
   main-is:             Main.hs
   build-depends:       base >=4.7 && <5
                      , bytestring
+                     , cabal-file-th
                      , hauth
-                     , http-client
                      , http-types
+                     , lens
                      , optparse-applicative
+                     , template-haskell
                      , text
+                     , time
+                     , uri-bytestring
+                     , uuid
+                     , wreq

@@ -2,6 +2,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
+{-|
+Module      : Main
+Description : HAuth Server (test server)
+Copyright   : (c) FPComplete, 2015
+License     : MIT
+Maintainer  : Tim Dysinger <tim@fpcomplete.com>
+Stability   : experimental
+Portability : POSIX
+-}
+
+module Main where
+
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Logger (runNoLoggingT, runStderrLoggingT)
 import           Control.Monad.STM (atomically)
