@@ -1,0 +1,83 @@
+# Kubernetes
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hauth
+  labels:
+    app: hauth
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+  - name: https
+    port: 443
+    targetPort: https
+  type: LoadBalancer
+  selector:
+    app: hauth
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: hauth
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: hauth
+    spec:
+      containers:
+      - name: rdr2tls
+        image: dysinger/rdr2tls:0.1.1
+        command:
+        - rdr2tls
+        - --port
+        - "8080"
+        ports:
+        - name: http
+          containerPort: 8080
+        restartStrategy: always
+      - name: hauth
+        image: dysinger/hauth:0.1.0
+        ports:
+        - name: https
+          containerPort: 8443
+        restartStrategy: always
+      - name: postgres
+        image: postgres:9.4
+        env:
+        - name: POSTGRES_USER
+          value: hauth
+        - name: POSTGRES_PASSWORD
+          value: hauth
+        ports:
+        - name: postgres
+          containerPort: 5432
+        restartStrategy: always
+      - name: consul
+        image: dysinger/consul:0.5.2
+        ports:
+        - name: consul
+          containerPort: 8500
+        volumeMounts:
+        - name: consul-secret
+          mountPath: /secret
+        restartStrategy: always
+      volumes:
+      - name: consul-secret
+        secret:
+          secretName: consul-hauth
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: consul-hauth
+type: Opaque
+data:
+  # base64 <<(echo '{ "server": true, "data_dir": "/tmp", "bootstrap": true }')
+  consul.json: |
+    eyAic2VydmVyIjogdHJ1ZSwgImRhdGFfZGlyIjogIi90bXAiLCAiYm9vdHN0cmFwIjogdHJ1ZSB9
+    Cg==
