@@ -68,10 +68,11 @@ doReq url id secret = do
         (Right uri) -> do
             ts <- floor <$> getPOSIXTime
             nonce <- toString <$> nextRandom
-            let host = uri ^. uriAuthorityL . _Just . authorityHostL . hostBSL
+            let scheme = uri ^. uriSchemeL . schemeBSL
+                host = uri ^. uriAuthorityL . _Just . authorityHostL . hostBSL
                 port =
                     maybe
-                        "80"
+                        (if scheme == "https" then "443" else "80")
                         (BC.pack . show)
                         (uri ^? uriAuthorityL . _Just . authorityPortL . _Just .
                          portNumberL)
