@@ -78,7 +78,10 @@ doReq url id secret = do
                         (BC.pack . show)
                         (uri ^? uriAuthorityL . _Just . authorityPortL . _Just .
                          portNumberL)
-                path = "/" <> uri ^. uriPathL
+                path =
+                    if BC.empty == uri ^. uriPathL
+                        then "/"
+                        else uri ^. uriPathL
                 (AuthMAC mac) =
                     hmacDigest
                         (AuthTS ts)
