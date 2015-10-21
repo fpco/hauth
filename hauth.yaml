@@ -77,7 +77,7 @@ metadata:
   name: consul-hauth
 type: Opaque
 data:
-  # base64 <<(echo '{ "server": true, "data_dir": "/tmp", "bootstrap": true }')
+  # base64 <<(echo '{ "server": true, "client_addr": "0.0.0.0", "data_dir": "/tmp", "bootstrap": true }')
   consul.json: |
-    eyAic2VydmVyIjogdHJ1ZSwgImRhdGFfZGlyIjogIi90bXAiLCAiYm9vdHN0cmFwIjogdHJ1ZSB9
-    Cg==
+    eyAic2VydmVyIjogdHJ1ZSwgImNsaWVudF9hZGRyIjogIjAuMC4wLjAiLCAiZGF0YV9kaXIiOiAi
+    L3RtcCIsICJib290c3RyYXAiOiB0cnVlIH0K
