@@ -1,8 +1,11 @@
-# Build (with example main)
+# Build
 
-    stack install . --flag hauth:example
+    cd ./hauth-bin/
+    stack install
+    docker build -t hauth-base .
+    stack image container
 
-# External Requirements
+# Runtime
 
 -   Consul
     
@@ -18,24 +21,13 @@
         consul-cli kv-write 123 "{\"secret\":\"supersekrat123\",\"name\":\"test\"}"
 
 -   Postgres 
-    
-    The example-hauth Main.hs has postgres on localhost with
-    user/name/password/db all set to 'hauth'.
-    
-    Persisent migrates the schema for you, of course.
 
-# Run
+        docker run --name postgres -d -e POSTGRES_USER=hauth -e POSTGRES_PASSWORD=hauth -p 5432:5432 postgres:9.4
 
 -   Run the example webserver in the same directory as the project.
     
-        ~/.local/bin/example-hauth
+        ~/.local/bin/hauth-server
 
--   Then make your requests for a static file in the same directory
-    as the project.
+-   Then make your requests with the client test tool.
     
-        curl -H "Authorization: MAC \
-        id=123 \
-        ts=1443482988 \
-        nonce=763d5941-662e-11e5-9e67-0235b842756b \
-        mac=53bb57e3d8e1306b5725de2e72382f1c1b0ae91dfa136958607fa5ab27bc889b \
-        " http://localhost:4321/hauth.cabal
+        ~/.local/bin/hauth-client http://localhost:8443 123 supersecret123
