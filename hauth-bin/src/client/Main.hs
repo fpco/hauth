@@ -72,7 +72,9 @@ doReq url id secret = do
                 host = uri ^. uriAuthorityL . _Just . authorityHostL . hostBSL
                 port =
                     maybe
-                        (if scheme == "https" then "443" else "80")
+                        (if scheme == "https"
+                             then "443"
+                             else "80")
                         (BC.pack . show)
                         (uri ^? uriAuthorityL . _Just . authorityPortL . _Just .
                          portNumberL)
