@@ -7,5 +7,5 @@ RUN apt-get update \
  && apt-get install -y libpq-dev libgmp-dev \
  && apt-get clean
 
-ENTRYPOINT [ "/usr/local/bin/example-hauth" ]
+ENTRYPOINT [ "/usr/local/bin/hauth-server" ]
 EXPOSE 8443
