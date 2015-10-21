@@ -14,17 +14,14 @@ module Network.HAuth.Auth where
 
 import           Crypto.Hash (SHA256(..))
 import           Crypto.MAC (HMAC(..), hmac)
-import           Data.ByteString (intercalate)
+import           Data.ByteString (ByteString, intercalate)
 import           Data.ByteString.Char8 (pack)
-import           Data.Maybe (fromMaybe)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Network.HAuth.Types
-import           Network.HTTP.Types ()
-import           Network.Wai
-       (Request(rawPathInfo, requestHeaders, requestMethod))
+import           Network.HTTP.Types (Method)
 
 -- | Produce a HMAC SHA256 digest of the given parameters.  Used to
 -- validate the 'mac' value given in the authentication header.
@@ -32,10 +29,13 @@ hmacDigest
     :: AuthTS Integer
     -> AuthNonce Text
     -> Maybe (AuthExt Text)
-    -> Request
     -> AcctSecret Text
+    -> Method
+    -> ByteString
+    -> ByteString
+    -> ByteString
     -> AuthMAC Text
-hmacDigest (AuthTS ts) (AuthNonce nonce) maybeExt rq (AcctSecret secret) =
+hmacDigest (AuthTS ts) (AuthNonce nonce) maybeExt (AcctSecret secret) method path host port =
     (AuthMAC . T.pack . show . hmacGetDigest) hmac'
   where
     hmac' :: HMAC SHA256
@@ -46,10 +46,10 @@ hmacDigest (AuthTS ts) (AuthNonce nonce) maybeExt rq (AcctSecret secret) =
                  "\n"
                  [ (pack . show) ts
                  , T.encodeUtf8 nonce
-                 , requestMethod rq
-                 , rawPathInfo rq
-                 , fromMaybe "" (lookup "host" (requestHeaders rq))
-                 , (pack . show) (443 :: Integer)
+                 , method
+                 , path
+                 , host
+                 , port
                  , maybe
                        ""
                        (\(AuthExt e) ->

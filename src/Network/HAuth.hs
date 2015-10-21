@@ -13,7 +13,9 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Network.HAuth (module Network.HAuth.Types, hauthMiddleware)
+module Network.HAuth
+       (module Network.HAuth.Auth, module Network.HAuth.Types,
+        hauthMiddleware)
        where
 
 #if __GLASGOW_HASKELL__ < 710
@@ -24,6 +26,8 @@ import           Control.Monad.IO.Class (MonadIO(liftIO))
 import           Control.Monad.Logger (runStdoutLoggingT, logInfo, logError)
 import           Data.Aeson (encode)
 import           Data.Attoparsec.Text (parseOnly, endOfInput)
+import           Data.ByteString (ByteString)
+import qualified Data.ByteString.Char8 as BC
 import           Data.Monoid ((<>))
 import           Data.Pool (Pool)
 import           Data.Text (Text)
@@ -42,7 +46,7 @@ import           Network.HAuth.Postgres
 import           Network.HAuth.Types
 import           Network.HTTP.Types
        (status400, status401, status403, hAuthorization)
-import           Network.Wai (responseLBS, requestHeaders, Middleware)
+import           Network.Wai (responseLBS, Middleware, Request(..))
 import           STMContainers.Map (Map)
 
 -- | WAI middleware to authenicate requests according to the spec laid out in
@@ -74,11 +78,22 @@ hauthMiddleware client cache pool app rq respond =
         case maybeAcct of
             Nothing -> authFailure status403 reqId "invalid id"
             Just Account{..} -> do
-                let computedMAC =
-                        hmacDigest authTS authNonce authExt rq acctSecret
-                if authMAC /= computedMAC
-                    then authFailure status403 reqId "invalid mac"
-                    else checkAuthTS reqId auth
+                case splitHostPort rq of
+                    Nothing -> authFailure status400 reqId "bad request"
+                    Just (host,port) ->
+                        let computedMAC =
+                                hmacDigest
+                                    authTS
+                                    authNonce
+                                    authExt
+                                    acctSecret
+                                    (requestMethod rq)
+                                    (rawPathInfo rq)
+                                    host
+                                    port
+                        in if authMAC /= computedMAC
+                               then authFailure status403 reqId "invalid mac"
+                               else checkAuthTS reqId auth
     checkAuthTS reqId auth@Auth{authTS = AuthTS ts,..} = do
         timeSpread <- abs . (-) ts . floor <$> liftIO getPOSIXTime
         if timeSpread > 120
@@ -104,3 +119,15 @@ hauthMiddleware client cache pool app rq respond =
                       [ ( "WWW-Authenticate"
                         , "MAC error=\"" <> T.encodeUtf8 message <> "\"")]
                       jsonMsg))
+
+splitHostPort :: Request -> Maybe (ByteString, ByteString)
+splitHostPort rq =
+    case (BC.split ':' <$> lookup "Host" (requestHeaders rq)) of
+        (Just [host]) ->
+            Just
+                ( host
+                , if isSecure rq
+                      then "443"
+                      else "80")
+        (Just [host,port]) -> Just (host, port)
+        _ -> Nothing
