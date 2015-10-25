@@ -23,12 +23,13 @@ Portability : POSIX
 
 module Network.HAuth.Types.Auth where
 
+import qualified Data.Text as T
 import Data.Aeson (ToJSON(..), Value(..))
 import Data.Aeson.TH
        (deriveToJSON, defaultOptions, fieldLabelModifier)
 import Data.Hashable (Hashable(..))
 import Data.Text (Text)
-import Data.UUID (UUID, toText)
+import Data.UUID (UUID,toString)
 import Database.Persist.TH
        (sqlSettings, share, persistLowerCase, mkPersist, mkMigrate)
 import Network.HAuth.Types.JSON
@@ -116,7 +117,7 @@ data AuthFailure = AuthFailure
 
 -- | Data.UUID doesn't have JSON instances - sorry for the orphan
 instance ToJSON UUID where
-  toJSON = String . toText
+  toJSON = String . T.pack . toString
 
 $(deriveToJSON defaultOptions ''AuthID)
 $(deriveToJSON defaultOptions ''AuthTS)
