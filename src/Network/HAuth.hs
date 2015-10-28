@@ -46,7 +46,7 @@ import           Network.HAuth.Parse
 import           Network.HAuth.Postgres
 import           Network.HAuth.Types
 import           Network.HTTP.Types
-       (status400, status401, status403, hAuthorization)
+       (status400, status401, hAuthorization)
 import           Network.Wai (responseLBS, Middleware, Request(..))
 import           STMContainers.Map (Map)
 
@@ -77,7 +77,7 @@ hauthMiddleware client cache pool app rq respond =
     checkAuthMAC reqId auth@Auth{..} = do
         maybeAcct <- getAccount client cache authID
         case maybeAcct of
-            Nothing -> authFailure status403 reqId "invalid id"
+            Nothing -> authFailure status401 reqId "invalid id"
             Just Account{..} -> do
                 case splitHostPort rq of
                     Nothing -> authFailure status400 reqId "bad request"
@@ -93,17 +93,17 @@ hauthMiddleware client cache pool app rq respond =
                                     host
                                     port
                         in if authMAC /= computedMAC
-                               then authFailure status403 reqId "invalid mac"
+                               then authFailure status401 reqId "invalid mac"
                                else checkAuthTS reqId auth
     checkAuthTS reqId auth@Auth{authTS = AuthTS ts,..} = do
         timeSpread <- abs . (-) ts . floor <$> liftIO getPOSIXTime
         if timeSpread > 120
-            then authFailure status403 reqId "invalid timestamp"
+            then authFailure status401 reqId "invalid timestamp"
             else checkAuthStore reqId auth
     checkAuthStore reqId auth = do
         dupe <- isDupeAuth pool auth
         if dupe
-            then authFailure status403 reqId "duplicate request"
+            then authFailure status401 reqId "duplicate request"
             else logAndStoreAuth reqId auth
     logAndStoreAuth reqId auth = do
         $logInfo
