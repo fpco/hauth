@@ -38,6 +38,9 @@ import           System.Environment (getEnv)
 main :: IO ()
 main = do
     hostname <- getHostName
+    -- NOTE: Using PortNum is needed right now due to a bug
+    -- consul-haskell-0.2.1 but will be fixed as soon as
+    -- consul-haskell-0.3 is released.
     client <- initializeConsulClient (T.pack hostname) (PortNum 8500) Nothing
     cache <- atomically Map.new
     runStderrLoggingT
