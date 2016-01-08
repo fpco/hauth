@@ -1,7 +1,4 @@
-resolver: lts-2.19
-extra-deps: [ tasty-hspec-1.1.2 ]
-packages:
-  - "."
+resolver: lts-4.0
 image:
   container:
     base: "hauth-base"

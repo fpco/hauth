@@ -55,8 +55,8 @@ getAccount client cache authId@(AuthID id') = do
         Nothing -> do
             maybeConsulKeyVal <- getKey client id' Nothing Nothing Nothing
             case maybeConsulKeyVal of
-                Just consulKeyVal ->
-                    case decode (fromStrict (kvValue consulKeyVal)) :: Maybe Account of
+                Just consulKeyVal | Just val <- kvValue consulKeyVal ->
+                    case decode (fromStrict val) :: Maybe Account of
                         Just acct -> do
                             (liftIO . atomically)
                                 (Map.insert acct authId cache)
@@ -64,7 +64,7 @@ getAccount client cache authId@(AuthID id') = do
                                 (watch id' (kvModifyIndex consulKeyVal) second)
                             (pure . Just) acct
                         Nothing -> pure Nothing
-                Nothing -> pure Nothing
+                _ -> pure Nothing
   where
     second = 1000 * 1000
     watch key idx backoff
@@ -78,14 +78,14 @@ getAccount client cache authId@(AuthID id') = do
                     ("Background for " <> key <> " : " <>
                      (T.pack . show) maybeKeyVal)
                 case maybeKeyVal of
-                    (Just keyValue) ->
-                        case decode (fromStrict (kvValue keyValue)) :: Maybe Account of
+                    Just keyValue | Just val <- kvValue keyValue ->
+                        case decode (fromStrict val) :: Maybe Account of
                             Just acct -> do
                                 (liftIO . atomically)
                                     (Map.insert acct authId cache)
                                 watchAgain key (kvModifyIndex keyValue) second
                             Nothing -> watchAgain key idx (backoff * 2)
-                    Nothing -> watchAgain key idx (backoff * 2))
+                    _ -> watchAgain key idx (backoff * 2))
             (\ex ->
                   do $logWarn (T.pack (show ex))
                      watchAgain key idx (backoff * 2))
