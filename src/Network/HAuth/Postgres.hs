@@ -56,8 +56,6 @@ isDupeAuth pool = isDupe . authToRegistry
         runSqlPool
             (selectList
                  ([ AuthRegistryId' ==. authRegistryId'
-                  , AuthRegistryTs ==. authRegistryTs] ||.
-                  [ AuthRegistryId' ==. authRegistryId'
                   , AuthRegistryNonce ==. authRegistryNonce] ||.
                   [ AuthRegistryId' ==. authRegistryId'
                   , AuthRegistryMac ==. authRegistryMac])
