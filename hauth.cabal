@@ -53,6 +53,7 @@ library
                      , uuid
                      , void
                      , wai
+                     , wai-extra
 
 test-suite test-hauth
   default-language:    Haskell2010
