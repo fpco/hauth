@@ -48,6 +48,7 @@ import           Network.HAuth.Types
 import           Network.HTTP.Types
        (status400, status401, hAuthorization)
 import           Network.Wai (responseLBS, Middleware, Request(..))
+import           Network.Wai.Request (appearsSecure)
 import           STMContainers.Map (Map)
 
 -- | WAI middleware to authenicate requests according to the spec laid out in
@@ -127,7 +128,7 @@ splitHostPort rq =
         (Just [host]) ->
             Just
                 ( host
-                , if isSecure rq
+                , if appearsSecure rq
                       then "443"
                       else "80")
         (Just [host,port]) -> Just (host, port)
