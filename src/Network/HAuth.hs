@@ -92,16 +92,6 @@ hauthMiddleware HAuthSettings {..} app rq respond =
                     case splitHostPort rq of
                         Nothing -> return (authFailure status400 reqId "bad request")
                         Just (host,port) -> do
-                            $logDebug $ T.pack $ "hmacDigest input: " ++
-                                show ( authTS
-                                     , authNonce
-                                     , authExt
-                                     , acctSecret
-                                     , requestMethod rq
-                                     , rawPathInfo rq
-                                     , host
-                                     , port
-                                     )
                             let computedMAC =
                                     hmacDigest
                                         authTS
