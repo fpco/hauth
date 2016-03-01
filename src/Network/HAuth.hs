@@ -59,7 +59,8 @@ data HAuthSettings = HAuthSettings
     , haPool :: !(Pool SqlBackend)
     , haLogFunc :: !(Loc -> LogSource -> LogLevel -> LogStr -> IO ())
     , haGetRequestId :: !(Request -> IO UUID)
-    -- FIXME add Consul prefix for #5
+    , haConsulPrefix :: !Text
+    -- ^ Text to be prefixed to the auth ID to generate the consul lookup key
     }
 
 -- | WAI middleware to authenicate requests according to the spec laid out in
@@ -85,7 +86,10 @@ hauthMiddleware HAuthSettings {..} app rq respond =
                             Right auth -> checkAuthMAC reqId auth
     checkAuthMAC reqId auth@Auth{..} = do
         eres <- tryAny $ do
-            maybeAcct <- getAccount haConsulClient haAccountCache authID
+            let authID' = AuthID $
+                    let AuthID orig = authID
+                     in haConsulPrefix <> orig
+            maybeAcct <- getAccount haConsulClient haAccountCache authID'
             case maybeAcct of
                 Nothing -> return (authFailure status401 reqId "invalid id")
                 Just Account{..} -> do
