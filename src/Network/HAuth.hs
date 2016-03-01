@@ -16,6 +16,7 @@ Portability : POSIX
 
 module Network.HAuth
        (module Network.HAuth.Auth, module Network.HAuth.Types,
+        HAuthSettings (..),
         hauthMiddleware)
        where
 
@@ -52,22 +53,27 @@ import           Network.Wai (responseLBS, Middleware, Request(..))
 import           Network.Wai.Request (appearsSecure)
 import           STMContainers.Map (Map)
 
+data HAuthSettings = HAuthSettings
+    { haConsulClient :: !ConsulClient
+    , haAccountCache :: !(Map (AuthID Text) Account)
+    , haPool :: !(Pool SqlBackend)
+    , haLogFunc :: !(Loc -> LogSource -> LogLevel -> LogStr -> IO ())
+    , haGetRequestId :: !(Request -> IO UUID)
+    , haConsulPrefix :: !Text
+    -- ^ Text to be prefixed to the auth ID to generate the consul lookup key
+    }
+
 -- | WAI middleware to authenicate requests according to the spec laid out in
 -- https://confluence.amgencss.fpcomplete.com/display/HMST/Authentication+system+requirements
 -- Takes a ConsulClient for accessing Consul, STMContainers.Map.Map
 -- used as a cache and a pool of Postgres database connections used
 -- for queries.
-hauthMiddleware :: ConsulClient
-                -> Map (AuthID Text) Account
-                -> Pool SqlBackend
-                -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ()) -- ^ log function
-                -> (Request -> IO UUID) -- ^ get request ID
-                -> Middleware
-hauthMiddleware client cache pool logFunc getRequestId app rq respond =
-    runLoggingT checkAuthHeader logFunc
+hauthMiddleware :: HAuthSettings -> Middleware
+hauthMiddleware HAuthSettings {..} app rq respond =
+    runLoggingT checkAuthHeader haLogFunc
   where
     checkAuthHeader = do
-        reqId <- liftIO (getRequestId rq)
+        reqId <- liftIO (haGetRequestId rq)
         case lookup hAuthorization (requestHeaders rq) of
             Nothing -> authFailure status401 reqId "missing header"
             Just bs ->
@@ -80,23 +86,16 @@ hauthMiddleware client cache pool logFunc getRequestId app rq respond =
                             Right auth -> checkAuthMAC reqId auth
     checkAuthMAC reqId auth@Auth{..} = do
         eres <- tryAny $ do
-            maybeAcct <- getAccount client cache authID
+            let authID' = AuthID $
+                    let AuthID orig = authID
+                     in haConsulPrefix <> orig
+            maybeAcct <- getAccount haConsulClient haAccountCache authID'
             case maybeAcct of
                 Nothing -> return (authFailure status401 reqId "invalid id")
                 Just Account{..} -> do
                     case splitHostPort rq of
                         Nothing -> return (authFailure status400 reqId "bad request")
                         Just (host,port) -> do
-                            $logDebug $ T.pack $ "hmacDigest input: " ++
-                                show ( authTS
-                                     , authNonce
-                                     , authExt
-                                     , acctSecret
-                                     , requestMethod rq
-                                     , rawPathInfo rq
-                                     , host
-                                     , port
-                                     )
                             let computedMAC =
                                     hmacDigest
                                         authTS
@@ -121,14 +120,14 @@ hauthMiddleware client cache pool logFunc getRequestId app rq respond =
             then return (authFailure status401 reqId "invalid timestamp")
             else checkAuthStore reqId auth
     checkAuthStore reqId auth = do
-        dupe <- isDupeAuth pool auth
+        dupe <- isDupeAuth haPool auth
         if dupe
             then return (authFailure status401 reqId "duplicate request")
             else logAndStoreAuth reqId auth
     logAndStoreAuth reqId auth = do
         $logInfo
             ((TL.toStrict . TL.decodeUtf8) (encode (AuthSuccess reqId auth)))
-        storeAuth pool auth
+        storeAuth haPool auth
         let rq' = rq
                 -- FIXME modify vault with the creds
                 { vault = vault rq
