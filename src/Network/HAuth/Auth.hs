@@ -35,24 +35,38 @@ hmacDigest
     -> ByteString
     -> ByteString
     -> AuthMAC Text
-hmacDigest (AuthTS ts) (AuthNonce nonce) maybeExt (AcctSecret secret) method path host port =
+hmacDigest ts nonce maybeExt (AcctSecret secret) method path host port =
     (AuthMAC . T.pack . show . hmacGetDigest) hmac'
   where
     hmac' :: HMAC SHA256
     hmac' =
         hmac
             (T.encodeUtf8 secret)
-            (intercalate
-                 "\n"
-                 [ (pack . show) ts
-                 , T.encodeUtf8 nonce
-                 , method
-                 , path
-                 , host
-                 , port
-                 , maybe
-                       ""
-                       (\(AuthExt e) ->
-                             T.encodeUtf8 e)
-                       maybeExt] <>
-             "\n")
+            (hmacRawMessage ts nonce maybeExt method path host port)
+
+-- | Returns the message to be hashed, in hauth-compliant format
+--   Useful for debugging
+hmacRawMessage
+    :: AuthTS Integer
+    -> AuthNonce Text
+    -> Maybe (AuthExt Text)
+    -> Method
+    -> ByteString
+    -> ByteString
+    -> ByteString
+    -> ByteString
+hmacRawMessage (AuthTS ts) (AuthNonce nonce) maybeExt method path host port =
+    intercalate
+        "\n"
+        [ (pack . show) ts
+        , T.encodeUtf8 nonce
+        , method
+        , path
+        , host
+        , port
+        , maybe
+              ""
+              (\(AuthExt e) ->
+                    T.encodeUtf8 e)
+              maybeExt] <>
+     "\n"
