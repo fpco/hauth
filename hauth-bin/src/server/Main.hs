@@ -15,7 +15,7 @@ Portability : POSIX
 module Main where
 
 import           Control.Monad.IO.Class (liftIO)
-import           Control.Monad.Logger (runNoLoggingT, runStderrLoggingT)
+import           Control.Monad.Logger.JSON.Extra (runNoLoggingT, runStderrJSONLoggingT)
 import           Control.Monad.STM (atomically)
 import qualified Data.ByteString.Char8 as BC
 import           Data.Monoid ((<>))
@@ -40,7 +40,7 @@ main = do
     hostname <- getHostName
     client <- initializeConsulClient (T.pack hostname) (PortNum 8500) Nothing
     cache <- atomically Map.new
-    runStderrLoggingT
+    runStderrJSONLoggingT
         (withPostgresqlPool
              ("host=" <> (BC.pack hostname) <>
               " dbname=hauth user=hauth password=hauth port=5432")

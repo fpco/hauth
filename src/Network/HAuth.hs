@@ -26,7 +26,7 @@ import           Control.Applicative ((<$>), (<*))
 
 import           Control.Exception.Enclosed (tryAny)
 import           Control.Monad.IO.Class (MonadIO(liftIO))
-import           Control.Monad.Logger (runLoggingT, logInfo, logError, Loc, LogSource, LogLevel, LogStr, logDebug)
+import           Control.Monad.Logger.JSON.Extra (runLoggingT, logInfoJ, logErrorJ, Loc, LogSource, LogLevel, LogStr)
 import           Data.Aeson (encode)
 import           Data.Attoparsec.Text (parseOnly, endOfInput)
 import           Data.ByteString (ByteString)
@@ -36,8 +36,6 @@ import           Data.Pool (Pool)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import qualified Data.Text.Lazy.Encoding as TL
-import qualified Data.Text.Lazy as TL
 import           Data.Time.Clock.POSIX (getPOSIXTime)
 import           Data.UUID (UUID)
 import           Database.Persist.Postgresql (SqlBackend)
@@ -111,7 +109,7 @@ hauthMiddleware HAuthSettings {..} app rq respond =
                                    else checkAuthTS reqId auth
         case eres of
             Left e -> do
-                $logError (T.pack (show e))
+                $logErrorJ (show e)
                 authFailure status500 reqId "internal error"
             Right x -> x
     checkAuthTS reqId auth@Auth{authTS = AuthTS ts,..} = do
@@ -125,8 +123,7 @@ hauthMiddleware HAuthSettings {..} app rq respond =
             then return (authFailure status401 reqId "duplicate request")
             else logAndStoreAuth reqId auth
     logAndStoreAuth reqId auth = do
-        $logInfo
-            ((TL.toStrict . TL.decodeUtf8) (encode (AuthSuccess reqId auth)))
+        $logInfoJ (AuthSuccess reqId auth)
         storeAuth haPool auth
         let rq' = rq
                 -- FIXME modify vault with the creds
@@ -134,15 +131,15 @@ hauthMiddleware HAuthSettings {..} app rq respond =
                 }
         return (liftIO (app rq' respond))
     authFailure status reqId message = do
-        let jsonMsg = encode (AuthFailure reqId message)
-        $logError ((TL.toStrict . TL.decodeUtf8) jsonMsg)
+        let msg = AuthFailure reqId message
+        $logErrorJ msg
         liftIO
             (respond
                  (responseLBS
                       status
                       [ ( "WWW-Authenticate"
                         , "MAC error=\"" <> T.encodeUtf8 message <> "\"")]
-                      jsonMsg))
+                      (encode msg)))
 
 splitHostPort :: Request -> Maybe (ByteString, ByteString)
 splitHostPort rq =

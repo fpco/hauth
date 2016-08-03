@@ -25,7 +25,7 @@ import           Control.Concurrent.Lifted (fork, threadDelay)
 import           Control.Exception.Enclosed (catchAny)
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (MonadIO(liftIO))
-import           Control.Monad.Logger (MonadLogger, logDebug, logWarn)
+import           Control.Monad.Logger.JSON.Extra (MonadLogger, logDebugJ, logWarnJ)
 import           Control.Monad.STM (atomically)
 import           Control.Monad.Trans.Control (MonadBaseControl(..))
 import           Data.Aeson (decode)
@@ -74,7 +74,7 @@ getAccount client cache authId@(AuthID id') = do
     watch key idx backoff =
         catchAny
             (do maybeKeyVal <- getKey client key (Just idx) Nothing Nothing
-                $logDebug
+                $logDebugJ
                     ("Background for " <> key <> " : " <>
                      (T.pack . show) maybeKeyVal)
                 case maybeKeyVal of
@@ -87,7 +87,7 @@ getAccount client cache authId@(AuthID id') = do
                             Nothing -> watchAgain key idx (backoff * 2)
                     Nothing -> watchAgain key idx (backoff * 2))
             (\ex ->
-                  do $logWarn (T.pack (show ex))
+                  do $logWarnJ (show ex)
                      watchAgain key idx (backoff * 2))
     watchAgain key idx backoff = do
         threadDelay backoff
