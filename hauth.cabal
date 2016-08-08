@@ -38,7 +38,7 @@ library
                      , http-types
                      , lifted-base
                      , monad-control
-                     , monad-logger
+                     , monad-logger-json-extra
                      , mtl
                      , network
                      , persistent
