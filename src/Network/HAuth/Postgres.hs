@@ -23,7 +23,7 @@ import Control.Applicative ((<$>))
 import Control.Monad (void)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Database.Persist
-       (PersistStore(insert), selectList, (||.), (==.))
+       (PersistStoreWrite(insert), selectList, (||.), (==.))
 import Database.Persist.Postgresql (SqlBackend, runSqlPool)
 import Database.Persist.Sql ()
 import Data.Pool (Pool)
